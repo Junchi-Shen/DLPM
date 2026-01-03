@@ -340,7 +340,8 @@ class Unet1D(Module):
         learned_sinusoidal_dim = 16,
         sinusoidal_pos_emb_theta = 10000,
         attn_dim_head = 32,
-        attn_heads = 4
+        attn_heads = 4,
+        cond_dim = None   # 额外的条件向量维度（可选）
     ):
         super().__init__()
 
@@ -348,6 +349,7 @@ class Unet1D(Module):
 
         self.channels = channels
         self.self_condition = self_condition
+        self.cond_dim = cond_dim
         input_channels = channels * (2 if self_condition else 1)
 
         init_dim = default(init_dim, dim)
@@ -375,6 +377,16 @@ class Unet1D(Module):
             nn.GELU(),
             nn.Linear(time_dim, time_dim)
         )
+
+        # 如果提供了条件维度，则建立一个 MLP 将条件映射到与时间嵌入相同的维度
+        if cond_dim is not None:
+            self.cond_mlp = nn.Sequential(
+                nn.Linear(cond_dim, time_dim),
+                nn.GELU(),
+                nn.Linear(time_dim, time_dim)
+            )
+        else:
+            self.cond_mlp = None
 
         resnet_block = partial(ResnetBlock, time_emb_dim = time_dim, dropout = dropout)
 
@@ -415,7 +427,7 @@ class Unet1D(Module):
         self.final_res_block = resnet_block(init_dim * 2, init_dim)
         self.final_conv = nn.Conv1d(init_dim, self.out_dim, 1)
 
-    def forward(self, x, time, x_self_cond = None):
+    def forward(self, x, time, x_self_cond = None, cond = None):
         if self.self_condition:
             x_self_cond = default(x_self_cond, lambda: torch.zeros_like(x))
             x = torch.cat((x_self_cond, x), dim = 1)
@@ -423,7 +435,13 @@ class Unet1D(Module):
         x = self.init_conv(x)
         r = x.clone()
 
+        # 时间嵌入
         t = self.time_mlp(time)
+
+        # 如果提供了条件向量，则映射后加到时间嵌入上
+        if (self.cond_mlp is not None) and (cond is not None):
+            cond_emb = self.cond_mlp(cond)
+            t = t + cond_emb
 
         h = []
 
@@ -481,6 +499,23 @@ def cosine_beta_schedule(timesteps, s = 0.008):
     betas = 1 - (alphas_cumprod[1:] / alphas_cumprod[:-1])
     return torch.clip(betas, 0, 0.999)
 
+def dlpm_cosine_schedule(timesteps, alpha, s = 0.008):
+    """
+    DLPM cosine schedule
+    根据论文：gamma_{1->t} = (alpha_bar_t)^(1/alpha), sigma_{1->t} = (1 - alpha_bar_t)^(1/alpha)
+    """
+    steps = timesteps + 1
+    x = torch.linspace(0, timesteps, steps, dtype = torch.float64)
+    # 计算 alpha_bar_t (累积alpha)
+    alphas_cumprod = torch.cos(((x / timesteps) + s) / (1 + s) * math.pi * 0.5) ** 2
+    alphas_cumprod = alphas_cumprod / alphas_cumprod[0]
+    
+    # DLPM调度：gamma 和 sigma
+    gamma_bar = alphas_cumprod ** (1.0 / alpha)
+    sigma_bar = (1.0 - alphas_cumprod) ** (1.0 / alpha)
+    
+    return gamma_bar[1:], sigma_bar[1:]  # 返回从t=1开始的序列
+
 class GaussianDiffusion1D(Module):
     def __init__(
         self,
@@ -495,7 +530,9 @@ class GaussianDiffusion1D(Module):
         auto_normalize = True,
         channels = None,
         self_condition = None,
-        channel_first = True
+        channel_first = True,
+        alpha = 2.0,  # DLPM参数：alpha=2.0时为标准高斯，alpha<2.0时为重尾分布
+        use_dlpm = False  # 是否使用DLPM（重尾噪声）
     ):
         super().__init__()
         self.model = model
@@ -506,22 +543,42 @@ class GaussianDiffusion1D(Module):
         self.seq_index = -2 if not channel_first else -1
 
         self.seq_length = seq_length
+        self.alpha = alpha
+        self.use_dlpm = use_dlpm
 
         self.objective = objective
 
         assert objective in {'pred_noise', 'pred_x0', 'pred_v'}, 'objective must be either pred_noise (predict noise) or pred_x0 (predict image start) or pred_v (predict v [v-parameterization as defined in appendix D of progressive distillation paper, used in imagen-video successfully])'
 
-        if beta_schedule == 'linear':
-            betas = linear_beta_schedule(timesteps)
-        elif beta_schedule == 'cosine':
-            betas = cosine_beta_schedule(timesteps)
+        # helper function to register buffer from float64 to float32
+        register_buffer = lambda name, val: self.register_buffer(name, val.to(torch.float32))
+
+        if use_dlpm:
+            # DLPM调度：使用gamma和sigma
+            gamma_bar, sigma_bar = dlpm_cosine_schedule(timesteps, alpha)
+            # 为了兼容性，计算对应的alphas_cumprod
+            alphas_cumprod = gamma_bar ** alpha
+            alphas_cumprod_prev = F.pad(alphas_cumprod[:-1], (1, 0), value = 1.)
+            betas = 1 - (alphas_cumprod / alphas_cumprod_prev)
+            betas[0] = 1 - alphas_cumprod[0]
+            
+            register_buffer('gamma_bar', gamma_bar)
+            register_buffer('sigma_bar', sigma_bar)
         else:
-            raise ValueError(f'unknown beta schedule {beta_schedule}')
+            # 标准DDPM调度
+            if beta_schedule == 'linear':
+                betas = linear_beta_schedule(timesteps)
+            elif beta_schedule == 'cosine':
+                betas = cosine_beta_schedule(timesteps)
+            else:
+                raise ValueError(f'unknown beta schedule {beta_schedule}')
+
+
+            alphas_cumprod = torch.cumprod(alphas, dim=0)
+            alphas_cumprod_prev = F.pad(alphas_cumprod[:-1], (1, 0), value = 1.)
 
         alphas = 1. - betas
-        alphas_cumprod = torch.cumprod(alphas, dim=0)
-        alphas_cumprod_prev = F.pad(alphas_cumprod[:-1], (1, 0), value = 1.)
-
+        
         timesteps, = betas.shape
         self.num_timesteps = int(timesteps)
 
@@ -532,10 +589,6 @@ class GaussianDiffusion1D(Module):
         assert self.sampling_timesteps <= timesteps
         self.is_ddim_sampling = self.sampling_timesteps < timesteps
         self.ddim_sampling_eta = ddim_sampling_eta
-
-        # helper function to register buffer from float64 to float32
-
-        register_buffer = lambda name, val: self.register_buffer(name, val.to(torch.float32))
 
         register_buffer('betas', betas)
         register_buffer('alphas_cumprod', alphas_cumprod)
@@ -582,16 +635,28 @@ class GaussianDiffusion1D(Module):
         self.unnormalize = unnormalize_to_zero_to_one if auto_normalize else identity
 
     def predict_start_from_noise(self, x_t, t, noise):
-        return (
-            extract(self.sqrt_recip_alphas_cumprod, t, x_t.shape) * x_t -
-            extract(self.sqrt_recipm1_alphas_cumprod, t, x_t.shape) * noise
-        )
+        if self.use_dlpm:
+            # DLPM: xstart = (x_t - eps*bs[t]) / bg[t]
+            bg_t = extract(self.gamma_bar, t, x_t.shape)
+            bs_t = extract(self.sigma_bar, t, x_t.shape)
+            return (x_t - noise * bs_t) / bg_t.clamp(min=1e-8)
+        else:
+            return (
+                extract(self.sqrt_recip_alphas_cumprod, t, x_t.shape) * x_t -
+                extract(self.sqrt_recipm1_alphas_cumprod, t, x_t.shape) * noise
+            )
 
     def predict_noise_from_start(self, x_t, t, x0):
-        return (
-            (extract(self.sqrt_recip_alphas_cumprod, t, x_t.shape) * x_t - x0) / \
-            extract(self.sqrt_recipm1_alphas_cumprod, t, x_t.shape)
-        )
+        if self.use_dlpm:
+            # DLPM: eps = (x_t - xstart*bg[t]) / bs[t]
+            bg_t = extract(self.gamma_bar, t, x_t.shape)
+            bs_t = extract(self.sigma_bar, t, x_t.shape)
+            return (x_t - x0 * bg_t) / bs_t.clamp(min=1e-8)
+        else:
+            return (
+                (extract(self.sqrt_recip_alphas_cumprod, t, x_t.shape) * x_t - x0) / \
+                extract(self.sqrt_recipm1_alphas_cumprod, t, x_t.shape)
+            )
 
     def predict_v(self, x_start, t, noise):
         return (
@@ -648,7 +713,7 @@ class GaussianDiffusion1D(Module):
         if exists(x_self_cond):
             model_forward_kwargs = {**model_forward_kwargs, 'self_cond': x_self_cond}
 
-        preds = self.model_predictions(x, t, **model_forward_kwargs)
+        preds = self.model_predictions(x, t, model_forward_kwargs=model_forward_kwargs)
         x_start = preds.pred_x_start
 
         if clip_denoised:
@@ -756,23 +821,73 @@ class GaussianDiffusion1D(Module):
         return img
 
     @autocast('cuda', enabled = False)
-    def q_sample(self, x_start, t, noise=None):
-        noise = default(noise, lambda: torch.randn_like(x_start))
+    def q_sample(self, x_start, t, noise=None, a_t=None, Sigma_prime_t=None):
+        """
+        DLPM前向过程（根据官方实现）
+        如果提供了 Sigma_prime_t，使用：x_t = bg[t] * x_0 + sqrt(Sigma_prime_t) * z_t
+        否则使用标准方式：x_t = bg[t] * x_0 + bs[t] * epsilon_t
+        """
+        if self.use_dlpm:
+            if Sigma_prime_t is not None:
+                # 训练时使用 Proposition (9)：给定 Sigma_prime_t
+                bg_t = extract(self.gamma_bar, t, x_start.shape)
+                z_t = default(noise, lambda: torch.randn_like(x_start))
+                return bg_t * x_start + torch.sqrt(Sigma_prime_t) * z_t
+            else:
+                # 采样时使用标准方式
+                if noise is None:
+                    epsilon_t, G_t, A_half = sample_dlpm_noise_like(x_start, self.alpha)
+                    noise = epsilon_t
+                else:
+                    epsilon_t = noise
+                
+                bg_t = extract(self.gamma_bar, t, x_start.shape)
+                bs_t = extract(self.sigma_bar, t, x_start.shape)
+                return bg_t * x_start + bs_t * epsilon_t
+        else:
+            # 标准DDPM前向过程
+            noise = default(noise, lambda: torch.randn_like(x_start))
+            return (
+                extract(self.sqrt_alphas_cumprod, t, x_start.shape) * x_start +
+                extract(self.sqrt_one_minus_alphas_cumprod, t, x_start.shape) * noise
+            )
 
-        return (
-            extract(self.sqrt_alphas_cumprod, t, x_start.shape) * x_start +
-            extract(self.sqrt_one_minus_alphas_cumprod, t, x_start.shape) * noise
-        )
-
-    def p_losses(self, x_start, t, noise = None, model_forward_kwargs: dict = dict(), return_reduced_loss = True):
+    def p_losses(self, x_start, t, noise = None, model_forward_kwargs: dict = dict(), return_reduced_loss = True, mask = None):
+        """
+        DLPM训练损失（根据官方实现 Proposition (9)）
+        只采样一个 a_t，计算 Sigma_prime_t = a_t * bs[t]**2
+        然后 x_t = bg[t] * x_0 + sqrt(Sigma_prime_t) * z_t
+        预测目标：eps_t = (x_t - bg[t]*x_0) / bs[t]
+        """
         b = x_start.shape[0]
         n = x_start.shape[self.seq_index]
 
-        noise = default(noise, lambda: torch.randn_like(x_start))
-
-        # noise sample
-
-        x = self.q_sample(x_start = x_start, t = t, noise = noise)
+        if self.use_dlpm:
+            # DLPM Proposition (9)：采样一个 a_t
+            a_t = sample_positive_stable_torch(self.alpha, batch_size=b, device=x_start.device)  # (B,)
+            
+            # 计算 Sigma_prime_t = a_t * bs[t]**2
+            bs_t = extract(self.sigma_bar, t, x_start.shape)  # (B, 1, L) 或 (B, L)
+            # 将 a_t 广播到与 bs_t 相同的形状
+            if bs_t.dim() == 3:  # (B, C, L)
+                a_t_expanded = a_t.view(b, 1, 1)  # (B, 1, 1)
+            else:  # (B, L)
+                a_t_expanded = a_t.view(b, 1)  # (B, 1)
+            
+            Sigma_prime_t = a_t_expanded * (bs_t ** 2)  # (B, C, L) 或 (B, L)
+            
+            # 采样 x_t = bg[t] * x_0 + sqrt(Sigma_prime_t) * z_t
+            z_t = default(noise, lambda: torch.randn_like(x_start))
+            x = self.q_sample(x_start=x_start, t=t, noise=z_t, Sigma_prime_t=Sigma_prime_t)
+            
+            # 计算目标 eps_t = (x_t - bg[t]*x_0) / bs[t]
+            bg_t = extract(self.gamma_bar, t, x_start.shape)
+            eps_t = (x - bg_t * x_start) / bs_t.clamp(min=1e-8)
+        else:
+            # 标准DDPM：使用高斯噪声
+            noise = default(noise, lambda: torch.randn_like(x_start))
+            x = self.q_sample(x_start=x_start, t=t, noise=noise)
+            eps_t = noise
 
         # if doing self-conditioning, 50% of the time, predict x_start from current set of times
         # and condition with unet with that
@@ -786,30 +901,48 @@ class GaussianDiffusion1D(Module):
 
             model_forward_kwargs = {**model_forward_kwargs, 'self_cond': x_self_cond}
 
-        # model kwargs
-
         # predict and take gradient step
-
         model_out = self.model(x, t, **model_forward_kwargs)
 
+        # 设置预测目标
         if self.objective == 'pred_noise':
-            target = noise
+            target = eps_t
         elif self.objective == 'pred_x0':
             target = x_start
         elif self.objective == 'pred_v':
-            v = self.predict_v(x_start, t, noise)
+            v = self.predict_v(x_start, t, eps_t if self.use_dlpm else noise)
             target = v
         else:
             raise ValueError(f'unknown objective {self.objective}')
 
-        loss = F.mse_loss(model_out, target, reduction = 'none')
+        loss = F.mse_loss(model_out, target, reduction = 'none')  # (B, C, L)
 
-        if not return_reduced_loss:
-            return loss * extract(self.loss_weight, t, loss.shape)
+        # 如果提供了 mask，只对有效位置计算损失
+        if mask is not None:
+            # mask 形状 (B, L) 或 (B, 1, L)，统一到 (B, 1, L)
+            if mask.dim() == 2:
+                mask = mask.unsqueeze(1)
+            mask = mask.to(loss.device).to(loss.dtype)
 
-        loss = reduce(loss, 'b ... -> b', 'mean')
+            loss = loss * mask  # (B, C, L)
 
-        loss = loss * extract(self.loss_weight, t, loss.shape)
+            if not return_reduced_loss:
+                # 返回逐点 masked loss，加上 loss_weight
+                return loss * extract(self.loss_weight, t, loss.shape)
+
+            # 每个样本的 masked 均值损失
+            loss_sum = loss.sum(dim=(1, 2))                     # (B,)
+            mask_sum = mask.sum(dim=(1, 2)).clamp(min=1e-8)     # (B,)
+            loss = loss_sum / mask_sum                          # (B,)
+        else:
+            if not return_reduced_loss:
+                return loss * extract(self.loss_weight, t, loss.shape)
+
+            # 原来的无 mask 行为：对所有位置平均
+            loss = reduce(loss, 'b ... -> b', 'mean')           # (B,)
+
+        # 按时间步的权重加权
+        loss = loss * extract(self.loss_weight, t, loss.shape)  # (B,)
 
         return loss.mean()
 

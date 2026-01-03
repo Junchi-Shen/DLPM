@@ -1,0 +1,77 @@
+
+📦 数据集名称：CSI300验证集
+🕒 报告生成时间：2025-08-02 21:12:03
+============================================================
+🧮 样本数量：827
+🧮 字段数量：12
+🧮 总数据点数（行×列）：9,924
+
+📋 字段名称列表：
+['contract_calendar_days', 'actual_trading_days', 'start_date', 'end_date', 'start_price', 'end_price', 'price_series', 'volatility', 'risk_free_rate', 'data_type', 'ticker', 'country']
+
+📊 每列非空比例：
+contract_calendar_days    100.00%
+actual_trading_days       100.00%
+start_date                100.00%
+end_date                  100.00%
+start_price               100.00%
+end_price                 100.00%
+price_series              100.00%
+volatility                100.00%
+risk_free_rate            100.00%
+data_type                 100.00%
+ticker                    100.00%
+country                   100.00%
+dtype: object
+
+❓ 缺失值统计：
+✅ 无缺失值
+
+📎 字段类型：
+contract_calendar_days             int64
+actual_trading_days                int64
+start_date                datetime64[ns]
+end_date                  datetime64[ns]
+start_price                      float64
+end_price                        float64
+price_series                      object
+volatility                       float64
+risk_free_rate                   float64
+data_type                         object
+ticker                            object
+country                           object
+dtype: object
+
+🔍 样本示例（首行）：
+                                                                        0
+contract_calendar_days                                                 30
+actual_trading_days                                                    22
+start_date                                            2024-01-02 00:00:00
+end_date                                              2024-02-01 00:00:00
+start_price                                                       3386.35
+end_price                                                         3217.71
+price_series            [3386.35, 3378.3, 3347.05, 3329.11, 3286.06, 3...
+volatility                                                       0.134218
+risk_free_rate                                                    0.02398
+data_type                                                      validation
+ticker                                                             000300
+country                                                             China
+
+📈 合约期限分布：
+contract_calendar_days
+30     343
+90     283
+180    193
+365      8
+Name: count, dtype: int64
+
+📉 波动率与利率统计：
+平均波动率：0.1623 ± 0.0330
+平均利率：1.96% ± 0.21%
+
+🔢 价格路径长度统计：
+平均长度：59.3 天
+最大长度：242 天
+最小长度：14 天
+============================================================
+📁 数据集已保存至：D:\各种文档\工作\关于金融投资的思考\论文1\Dataset\Option_Pricing_Dataset\CSI300\val_df.csv

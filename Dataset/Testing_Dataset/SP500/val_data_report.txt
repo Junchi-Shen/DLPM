@@ -1,0 +1,77 @@
+
+📦 数据集名称：SP500验证集
+🕒 报告生成时间：2025-08-02 21:09:09
+============================================================
+🧮 样本数量：879
+🧮 字段数量：12
+🧮 总数据点数（行×列）：10,548
+
+📋 字段名称列表：
+['contract_calendar_days', 'actual_trading_days', 'start_date', 'end_date', 'start_price', 'end_price', 'price_series', 'volatility', 'risk_free_rate', 'data_type', 'ticker', 'country']
+
+📊 每列非空比例：
+contract_calendar_days    100.00%
+actual_trading_days       100.00%
+start_date                100.00%
+end_date                  100.00%
+start_price               100.00%
+end_price                 100.00%
+price_series              100.00%
+volatility                100.00%
+risk_free_rate            100.00%
+data_type                 100.00%
+ticker                    100.00%
+country                   100.00%
+dtype: object
+
+❓ 缺失值统计：
+✅ 无缺失值
+
+📎 字段类型：
+contract_calendar_days             int64
+actual_trading_days                int64
+start_date                datetime64[ns]
+end_date                  datetime64[ns]
+start_price                      float64
+end_price                        float64
+price_series                      object
+volatility                       float64
+risk_free_rate                   float64
+data_type                         object
+ticker                            object
+country                           object
+dtype: object
+
+🔍 样本示例（首行）：
+                                                                        0
+contract_calendar_days                                                 30
+actual_trading_days                                                    21
+start_date                                            2024-01-02 00:00:00
+end_date                                              2024-02-01 00:00:00
+start_price                                                   4742.830078
+end_price                                                     4906.189941
+price_series            [4742.830078125, 4704.81005859375, 4688.680175...
+volatility                                                       0.130608
+risk_free_rate                                                     0.0555
+data_type                                                      validation
+ticker                                                              ^GSPC
+country                                                               USA
+
+📈 合约期限分布：
+contract_calendar_days
+30     356
+90     296
+180    206
+365     21
+Name: count, dtype: int64
+
+📉 波动率与利率统计：
+平均波动率：0.1252 ± 0.0157
+平均利率：5.05% ± 0.45%
+
+🔢 价格路径长度统计：
+平均长度：64.9 天
+最大长度：252 天
+最小长度：18 天
+============================================================
+📁 数据集已保存至：D:\各种文档\工作\关于金融投资的思考\论文1\Dataset\Option_Pricing_Dataset\SP500\val_df.csv

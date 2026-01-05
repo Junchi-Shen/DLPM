@@ -33,8 +33,9 @@ import json
 try:
     import Project_Path as pp
     from Data.Input_preparation import DataProcessor # 更新后的 DataProcessor
-    # !! 使用修改后的 GaussianDiffusion1D !!
+    # !! 使用修改后的 GaussianDiffusion1D 或 DLPMDiffusion1D !!
     from Model.Diffusion_Model.diffusion_with_condition import GaussianDiffusion1D
+    from Model.Diffusion_Model.diffusion_dlpm import DLPMDiffusion1D
     from Model.Diffusion_Model.trainer_with_condition import Trainer1D, Dataset1D
     from Model.Diffusion_Model.Unet_with_condition import Unet1D
     # !! 重新导入 EnhancedConditionNetwork !!
@@ -188,20 +189,38 @@ if __name__ == '__main__':
             if use_cond_net: model_info_for_report['total_params'] = model_info_for_report.get('unet_params', 0) + model_info_for_report.get('cond_net_params', 0)
         else: raise ValueError(f"不支持的模型类型: {main_config['model_type']}")
 
-        print(f"   初始化 GaussianDiffusion1D...")
-        # ** 将 condition_network 传递给 GaussianDiffusion1D **
-        diffusion = GaussianDiffusion1D(
-            model=model,
-            condition_network=condition_network, # <-- 传递实例
-            seq_length=main_config.get('seq_length', 252),
-            timesteps=main_config['timesteps'],
-            objective=main_config.get('objective', 'pred_v'),
-            auto_normalize=main_config.get('auto_normalize', False),
-            warmup_ratio=main_config.get('warmup_ratio', 0.0),
-            train_num_steps=main_config['train_num_steps'],
-            # ema_beta=main_config.get('ema_decay', 0.99) # 传递 ema_beta 给 diffusion
-        ).to(device)
-        print(f"   ✅ 高斯扩散过程初始化成功 {'(已集成条件网络)' if use_cond_net else ''}。")
+        # 检查是否使用DLPM
+        use_dlpm = main_config.get('use_dlpm', False)
+        if use_dlpm:
+            print(f"   初始化 DLPMDiffusion1D (alpha={main_config.get('dlpm_alpha', 1.7)})...")
+            diffusion = DLPMDiffusion1D(
+                model=model,
+                condition_network=condition_network,
+                seq_length=main_config.get('seq_length', 252),
+                timesteps=main_config['timesteps'],
+                objective=main_config.get('objective', 'pred_v'),
+                auto_normalize=main_config.get('auto_normalize', False),
+                alpha=main_config.get('dlpm_alpha', 1.7),
+                isotropic=main_config.get('dlpm_isotropic', True),
+                rescale_timesteps=main_config.get('dlpm_rescale_timesteps', True),
+                scale=main_config.get('dlpm_scale', 'scale_preserving'),
+            ).to(device)
+            print(f"   ✅ DLPM扩散过程初始化成功 {'(已集成条件网络)' if use_cond_net else ''}。")
+        else:
+            print(f"   初始化 GaussianDiffusion1D...")
+            # ** 将 condition_network 传递给 GaussianDiffusion1D **
+            diffusion = GaussianDiffusion1D(
+                model=model,
+                condition_network=condition_network, # <-- 传递实例
+                seq_length=main_config.get('seq_length', 252),
+                timesteps=main_config['timesteps'],
+                objective=main_config.get('objective', 'pred_v'),
+                auto_normalize=main_config.get('auto_normalize', False),
+                warmup_ratio=main_config.get('warmup_ratio', 0.0),
+                train_num_steps=main_config['train_num_steps'],
+                # ema_beta=main_config.get('ema_decay', 0.99) # 传递 ema_beta 给 diffusion
+            ).to(device)
+            print(f"   ✅ 高斯扩散过程初始化成功 {'(已集成条件网络)' if use_cond_net else ''}。")
 
     except Exception as e: print(f"   ❌ 初始化模型或扩散过程时出错: {e}"); traceback.print_exc(); sys.exit(1)
 

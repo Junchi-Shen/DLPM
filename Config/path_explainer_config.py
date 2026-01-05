@@ -17,6 +17,19 @@ PATH_JOBS = {
         "processor_filename": "data_processor_all.pkl" 
     },
     
+    "validate_dlpm": { 
+        "model_type": "unet",  # DLPM也使用unet类型（因为使用相同的验证逻辑）
+        "display_name": "DLPM (P-Model)",
+        "paths_dir_key": "Path_Generator_Results_DIR", 
+        
+        "paths_filename_base": "dlpm_generated_paths", # <-- 与 generator_config.py 中的 DLPM 配置一致
+        
+        "data_asset_folder":  "CSI1000", 
+        "processor_source_folder": "all",
+        "processor_dir_key": "Model_Results_DIR", 
+        "processor_filename": "data_processor_all.pkl" 
+    },
+    
     "validate_gbm": { 
         "model_type": "mc",
         "display_name": "GBM (Q-Model)",

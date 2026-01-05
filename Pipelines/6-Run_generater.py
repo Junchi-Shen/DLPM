@@ -25,14 +25,15 @@ if __name__ == '__main__':
     # (asset 必须是 'all' 或 'CSI1000' 等具体资产名)
     JOBS_TO_RUN = [
         {'job_name': 'GARCH', 'asset': 'CSI1000'},
-        {'job_name': 'GBM',  'asset': 'CSI1000'},
-        {'job_name': 'UNet', 'asset': 'CSI1000'}
+        {'job_name': 'GBM',  'asset': 'CSI1000'},  # 启用 GBM 路径生成（回测需要）
+        {'job_name': 'UNet', 'asset': 'CSI1000'},  # 已生成，可注释掉
+        {'job_name': 'DLPM', 'asset': 'CSI1000'}  # 已生成，可注释掉
     ]
     # -------------------------------
 
     # --- 2. 设置全局生成参数 ---
     # 所有作业将使用相同的路径数量
-    NUM_PATHS_TO_GENERATE = 1024 # <-- 在这里修改为你想要的值
+    NUM_PATHS_TO_GENERATE = 100# <-- 在这里修改为你想要的值
     # ------------------------------------
 
     # --- 3. 定义环境 ---

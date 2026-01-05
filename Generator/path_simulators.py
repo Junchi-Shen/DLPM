@@ -10,6 +10,7 @@ from arch import arch_model
 import gc
 from pathlib import Path
 from Model.Diffusion_Model.diffusion_with_condition import GaussianDiffusion1D
+from Model.Diffusion_Model.diffusion_dlpm import DLPMDiffusion1D
 from Model.Diffusion_Model.Unet_with_condition import Unet1D
 from Model.Diffusion_Model.condition_network import EnhancedConditionNetwork
 from Data.Input_preparation import DataProcessor
@@ -213,7 +214,9 @@ def load_diffusion_artifacts(
     unet_config: dict,      # <-- 重命名为 unet_config
     diffusion_config: dict,
     cond_net_config: dict | None, # <-- 设为可选
-    device: str
+    device: str,
+    use_dlpm: bool = False,  # <-- 新增：是否使用DLPM
+    dlpm_alpha: float = 1.7  # <-- 新增：DLPM的alpha参数
 ):
     """
     加载扩散生成所需的所有产出物：
@@ -304,24 +307,44 @@ def load_diffusion_artifacts(
         raise
 
     # --- 4. 初始化 Diffusion 包装器 ---
-    # ** 关键: 将加载的 condition_network 实例 (可能是 None) 传递给 GaussianDiffusion1D **
-    # 假设 GaussianDiffusion1D 的 __init__ 已被修改以接受 condition_network
-    print(f"   🔄 正在初始化 GaussianDiffusion1D...")
-    try:
-        diffusion = GaussianDiffusion1D(
-            model=model,                  # 传递加载的 U-Net
-            condition_network=condition_network, # 传递加载的条件网络 (或 None)
-            **diffusion_config          # 传递扩散过程参数
-        ).to(device)
-        print(f"   ✅ GaussianDiffusion1D 初始化成功 {'带有' if condition_network else '不带'} 条件网络。")
-    except TypeError as e:
-         if 'condition_network' in str(e):
-              print("   ❌ 错误: GaussianDiffusion1D 的 __init__ 方法似乎不支持 'condition_network' 参数。")
-              print("       请确保你使用的是接受此参数的 diffusion_with_condition.py 版本。")
-         raise
-    except Exception as e:
-         print(f"   ❌ 初始化 GaussianDiffusion1D 时出错: {e}")
-         raise
+    # ** 关键: 将加载的 condition_network 实例 (可能是 None) 传递给扩散模型 **
+    if use_dlpm:
+        print(f"   🔄 正在初始化 DLPMDiffusion1D (alpha={dlpm_alpha})...")
+        try:
+            # DLPM特定的配置
+            dlpm_config = {
+                **diffusion_config,
+                'alpha': dlpm_alpha,  # DLPM参数
+                'isotropic': True,   # DLPM参数
+                'rescale_timesteps': True,  # DLPM参数
+                'scale': 'scale_preserving',  # DLPM参数
+            }
+            diffusion = DLPMDiffusion1D(
+                model=model,
+                condition_network=condition_network,
+                **dlpm_config
+            ).to(device)
+            print(f"   ✅ DLPMDiffusion1D 初始化成功 {'带有' if condition_network else '不带'} 条件网络。")
+        except Exception as e:
+            print(f"   ❌ 初始化 DLPMDiffusion1D 时出错: {e}")
+            raise
+    else:
+        print(f"   🔄 正在初始化 GaussianDiffusion1D...")
+        try:
+            diffusion = GaussianDiffusion1D(
+                model=model,                  # 传递加载的 U-Net
+                condition_network=condition_network, # 传递加载的条件网络 (或 None)
+                **diffusion_config          # 传递扩散过程参数
+            ).to(device)
+            print(f"   ✅ GaussianDiffusion1D 初始化成功 {'带有' if condition_network else '不带'} 条件网络。")
+        except TypeError as e:
+             if 'condition_network' in str(e):
+                  print("   ❌ 错误: GaussianDiffusion1D 的 __init__ 方法似乎不支持 'condition_network' 参数。")
+                  print("       请确保你使用的是接受此参数的 diffusion_with_condition.py 版本。")
+             raise
+        except Exception as e:
+             print(f"   ❌ 初始化 GaussianDiffusion1D 时出错: {e}")
+             raise
 
     return diffusion, data_processor
 # 核心生成函数 (批量)

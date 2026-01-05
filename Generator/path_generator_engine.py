@@ -215,6 +215,10 @@ class PathGeneratorEngine: # 重命名类以示清晰
 
         try:
             # 使用 path_simulators 中的更新后的加载函数
+            # 检查是否使用DLPM
+            use_dlpm = self.spec.get('use_dlpm', False)
+            dlpm_alpha = self.spec.get('dlpm_alpha', 1.7)
+            
             self.diffusion_model, self.data_processor = load_diffusion_artifacts(
                 model_dir=model_dir,
                 processor_filename=loader_params['processor_filename'],
@@ -224,7 +228,9 @@ class PathGeneratorEngine: # 重命名类以示清晰
                 unet_config=self.spec['unet_config'],       # 传递 unet 配置
                 diffusion_config=self.spec['diffusion_config'],  # 传递 diffusion 配置
                 cond_net_config=self.spec.get('cond_net_config'), # 传递条件网络配置 (可能是 None)
-                device=self.device
+                device=self.device,
+                use_dlpm=use_dlpm,  # 传递DLPM标志
+                dlpm_alpha=dlpm_alpha  # 传递DLPM alpha参数
             )
             print("✅ 扩散模型产出物加载成功。")
             if not isinstance(self.data_processor, DataProcessor):

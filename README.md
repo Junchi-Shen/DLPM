@@ -152,3 +152,10 @@ python Pipelines/9-Run_game_explainer.py
 ## 贡献与反馈
 
 欢迎提交问题和改进建议，共同完善项目。
+
+## 运行 下列代码 以快速启动实验：
+```
+
+python Pipelines/4-Run_Diffusion.py && python Pipelines/5-Run_Garch_Fitting.py && python Pipelines/6-Run_generater.py && python Pipelines/7-run_path_explainer.py && python Pipelines/8-run_game.py && python Pipelines/9-Run_game_explainer.py
+
+```

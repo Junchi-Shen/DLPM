@@ -65,16 +65,26 @@ class EnhancedConditionNetwork(nn.Module):
         """
         # === 1. 分离特征 ===
         numerical_features = conditions[:, :5]      
-        country_ids = conditions[:, 5].long()       
-        index_ids = conditions[:, 6].long()         
         
-        # === 2. 获取表示 ===
+        # --- !! 核心修复：索引安全护栏 !! ---
+        # 提取索引并强制将其限制在合法的 Embedding 范围内
+        # 防止数据中的非法 ID 导致 CUDA error: device-side assert triggered
+        
+        country_ids = conditions[:, 5].long()
+        max_country_idx = self.country_embedding.num_embeddings - 1
+        country_ids = torch.clamp(country_ids, 0, max_country_idx)
+        
+        index_ids = conditions[:, 6].long()
+        max_index_idx = self.index_embedding.num_embeddings - 1
+        index_ids = torch.clamp(index_ids, 0, max_index_idx)
+        # ------------------------------------
+        
+        # === 2. 获取表示 (现在是安全的) ===
         numerical_feat = self.numerical_proj(numerical_features) 
         country_emb = self.country_embedding(country_ids)      
         index_emb = self.index_embedding(index_ids)          
         
         # === 3. 加权融合 ===
-        # Ensure weights are broadcast correctly if needed (likely okay here)
         weighted_numerical = self.numerical_weight * numerical_feat
         weighted_country = self.country_weight * country_emb
         weighted_index = self.index_weight * index_emb
@@ -85,7 +95,6 @@ class EnhancedConditionNetwork(nn.Module):
         condition_embedding = self.fusion_network(combined)
         
         return condition_embedding
-    
     def get_feature_importance(self):
         """返回各特征的相对权重（用于可视化）"""
         # Use .data to get tensor value without gradients

@@ -171,7 +171,7 @@ if __name__ == '__main__':
             cond_net_params = main_config.get('cond_net_params', {})
             cond_net_output_dim = cond_net_params.get('output_dim', 128)
             print(f"   初始化 EnhancedConditionNetwork...")
-            condition_network = EnhancedConditionNetwork(num_countries=num_countries, num_indices=num_indices, **cond_net_params).to(device)
+            condition_network = EnhancedConditionNetwork(num_countries=num_countries+5, num_indices=num_indices+10, **cond_net_params).to(device)
             print(f"   ✅ Enhanced Condition Network 初始化成功。输出维度: {cond_net_output_dim}")
             model_info_for_report['cond_net_params'] = sum(p.numel() for p in condition_network.parameters())
         else:
@@ -201,6 +201,9 @@ if __name__ == '__main__':
                 objective=main_config.get('objective', 'pred_v'),
                 auto_normalize=main_config.get('auto_normalize', False),
                 alpha=main_config.get('dlpm_alpha', 1.7),
+                warmup_ratio=main_config.get('warmup_ratio', 0.20),   # 预热比例
+                train_num_steps=main_config['train_num_steps'],       # 总步数
+                ema_beta=main_config.get('ema_decay', 0.99),
                 isotropic=main_config.get('dlpm_isotropic', True),
                 rescale_timesteps=main_config.get('dlpm_rescale_timesteps', True),
                 scale=main_config.get('dlpm_scale', 'scale_preserving'),
@@ -235,12 +238,6 @@ if __name__ == '__main__':
             mask_train.clone().detach().float()
         )
         print(f"   ✅ Dataset1D 创建成功，包含 {len(dataset)} 个样本。")
-
-        # ** 恢复优化器参数合并 **
-        all_trainable_params = list(model.parameters())
-        if use_cond_net and condition_network is not None:
-            all_trainable_params += list(condition_network.parameters())
-        print(f"   总可训练参数: {sum(p.numel() for p in all_trainable_params if p.requires_grad):,}")
 
         trainer_params = main_config.get('trainer_params', {})
         trainer = Trainer1D(

@@ -27,13 +27,19 @@ joblib>=1.1.0
 pathlib>=1.0.1
 
 
-logging>=0.5.1.2
-warnings
+logging
+# warnings
 
 
-os
-sys
-json
-gc
-traceback
-datetime
+# os
+# sys
+# json
+# gc
+# traceback
+# datetime
+
+optuna>=3.0.0
+plotly>=5.0.0
+kaleido>=0.2.1
+
+arch

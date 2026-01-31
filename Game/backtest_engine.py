@@ -77,8 +77,8 @@ class Backtester:
         
         # --- 1. 推断 P 和 Q 模型数据所在的文件夹 ---
         # 假设 UNet ('unet') 数据在 'all'，MC ('mc') 数据在具体资产文件夹下
-        p_model_data_folder = 'CSI1000' if self.config.get('P_model_type') == 'unet' else self.asset_name
-        q_model_data_folder = 'CSI1000' if self.config.get('Q_model_type') == 'unet' else self.asset_name
+        p_model_data_folder = 'CSI1000' if self.config.get('P_model_type') == 'dlpm' else self.asset_name
+        q_model_data_folder = 'CSI1000' if self.config.get('Q_model_type') == 'dlpm' else self.asset_name
         
         # --- 2. 获取根目录 ---
         paths_root_dir = getattr(pp, "Path_Generator_Results_DIR")
@@ -99,7 +99,11 @@ class Backtester:
         # (假设 processor 文件名固定或从 config 读取)
         processor_filename = "data_processor_all.pkl" # 或者 self.config.get('processor_filename', 'data_processor_all.pkl')
         processor_folder = self.config.get('processor_source_folder', p_model_data_folder)
-        self.processor_path = model_root_dir / processor_folder / processor_filename
+        processor_type_subfolder = self.config.get('processor_type_subfolder')
+        if processor_type_subfolder:
+            self.processor_path = model_root_dir / processor_type_subfolder / processor_folder / processor_filename
+        else:
+            self.processor_path = model_root_dir / processor_folder / processor_filename
         
         # 验证数据指向中央 merge 文件
         # (假设中央文件名固定)
@@ -180,7 +184,7 @@ class Backtester:
         print(f"  - ✅ Q 模型文件已加载: {self.q_paths_file_path.name} (原始形状: {self.q_model_paths.shape})")
 
         # --- 3. 加载处理器 (如果 P 模型需要) ---
-        if self.config.get('P_model_type') == 'unet':
+        if self.config.get('P_model_type') == 'dlpm':
              # (路径构建已在 _setup_paths 中完成)
              if not self.processor_path.exists():
                  raise FileNotFoundError(f"处理器文件未找到: {self.processor_path}")
@@ -205,8 +209,8 @@ class Backtester:
         #    (如果 P 是 UNet，需要恢复价格；否则假设已经是价格)
         num_conditions_expected = len(self.val_df)
         
-        if self.config.get('P_model_type') == 'unet':
-            print(f"  - 正在恢复 P 模型 (UNet) 的价格路径...")
+        if self.config.get('P_model_type') == 'dlpm':
+            print(f"  - 正在恢复 P 模型 (dlpm) 的价格路径...")
             if p_model_output_raw.shape[0] != num_conditions_expected:
                  raise ValueError(f"P 模型输出形状 ({p_model_output_raw.shape}) 与过滤后的条件数量 ({num_conditions_expected}) 不匹配！")
             

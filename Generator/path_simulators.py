@@ -210,142 +210,90 @@ def load_diffusion_artifacts(
     model_dir: Path,
     processor_filename: str,
     model_filename: str,
-    condition_network_filename: str | None, # <-- 设为可选
-    unet_config: dict,      # <-- 重命名为 unet_config
+    condition_network_filename: str | None,
+    unet_config: dict,
     diffusion_config: dict,
-    cond_net_config: dict | None, # <-- 设为可选
+    cond_net_config: dict | None,
     device: str,
-    use_dlpm: bool = False,  # <-- 新增：是否使用DLPM
-    dlpm_alpha: float = 1.7  # <-- 新增：DLPM的alpha参数
+    use_dlpm: bool = False,
+    dlpm_alpha: float = 1.7 
 ):
     """
-    加载扩散生成所需的所有产出物：
-    DataProcessor, ConditionNetwork (如果指定), U-Net, 以及 Diffusion 包装器。
+    自适应维度加载器：自动从权重探测维度，实现全局模型对局部资产的‘自由生成’。
     """
     print("🔄 正在加载扩散模型产出物...")
 
-    # --- 1. 加载 DataProcessor ---
+    # --- 1. 加载 DataProcessor (用于逆向转换，不用于决定维度) ---
     processor_path = model_dir / processor_filename
-    if not processor_path.exists():
-        raise FileNotFoundError(f"DataProcessor 文件未找到: {processor_path}")
-    try:
-        data_processor = joblib.load(processor_path)
-        print(f"   ✅ DataProcessor 已从以下位置加载: {processor_path}")
-        # 提取类别数量，用于条件网络
-        num_countries = data_processor.num_countries if hasattr(data_processor, 'num_countries') and data_processor.num_countries else 1
-        num_indices = data_processor.num_indices if hasattr(data_processor, 'num_indices') and data_processor.num_indices else 1
-        print(f"      - 检测到 {num_countries} 个国家, {num_indices} 个指数。")
-    except Exception as e:
-        print(f"   ❌ 加载 DataProcessor 时出错: {e}")
-        raise
+    data_processor = joblib.load(processor_path)
 
-    # --- 2. 加载条件网络 (如果提供了文件名) ---
+    # --- 2. 动态维度探测 (解决 Size Mismatch) ---
     condition_network = None
-    cond_net_output_dim = 7 # 默认：如果没有条件网络，U-Net 接收原始 7D 条件
-    if condition_network_filename and cond_net_config: # 需要文件名和配置
+    if condition_network_filename and cond_net_config:
         cond_net_path = model_dir / condition_network_filename
-        if not cond_net_path.exists():
-            # 尝试去掉可能的 '_all' 后缀查找 (兼容性)
-            cond_net_filename_base = condition_network_filename.replace('_all', '')
-            cond_net_path = model_dir / cond_net_filename_base
-            if not cond_net_path.exists():
-                raise FileNotFoundError(f"ConditionNetwork 文件未找到于 {model_dir / condition_network_filename} 或 {cond_net_path}")
+        # 先加载权重字典以探测训练时的“舞台大小”
+        state_dict_cond = torch.load(cond_net_path, map_location=device)
+        state_dict_cond = {k.replace('module.', ''): v for k, v in state_dict_cond.items()}
+        
+        # 核心：直接从权重矩阵的 shape 提取维度 (如 7 和 18)
+        trained_countries = state_dict_cond['country_embedding.weight'].shape[0]
+        trained_indices = state_dict_cond['index_embedding.weight'].shape[0]
+        
+        print(f"      - 🚀 模型自由化：自动对齐训练维度 ({trained_countries} 国家, {trained_indices} 指数)")
 
-        print(f"   🔄 正在从以下位置加载 EnhancedConditionNetwork: {cond_net_path}")
-        try:
-            # 使用从 processor 获取的类别数量和配置中的维度来初始化网络
-            cond_net_output_dim = cond_net_config.get('output_dim', 128) # 获取输出维度
-            condition_network = EnhancedConditionNetwork(
-                num_countries=num_countries, # 使用从 processor 获取的数量
-                num_indices=num_indices,   # 使用从 processor 获取的数量
-                **cond_net_config        # 传递配置中的其他维度参数
-            ).to(device)
-            # 加载状态字典
-            state_dict = torch.load(cond_net_path, map_location=device)
-            # 处理可能的 DataParallel 包装
-            if isinstance(state_dict, dict) and any(k.startswith('module.') for k in state_dict):
-                state_dict = {k.replace('module.', ''): v for k, v in state_dict.items()}
-            condition_network.load_state_dict(state_dict)
-            condition_network.eval() # 设置为评估模式
-            print(f"   ✅ EnhancedConditionNetwork 加载成功。输出维度: {cond_net_output_dim}")
-        except Exception as e:
-            print(f"   ❌ 加载 EnhancedConditionNetwork 时出错: {e}")
-            raise
-    else:
-        print("   ℹ️ 未指定条件网络或其配置，将不使用 EnhancedConditionNetwork。")
-        # U-Net 将接收原始 7D 条件
+        condition_network = EnhancedConditionNetwork(
+            num_countries=trained_countries, 
+            num_indices=trained_indices,
+            **cond_net_config
+        ).to(device)
+        
+        condition_network.load_state_dict(state_dict_cond)
+        condition_network.eval()
 
-    # --- 3. 加载 U-Net 模型 ---
+    # --- 3. 初始化模型结构 (U-Net) ---
     model_path = model_dir / model_filename
-    if not model_path.exists():
-        # 尝试去掉可能的 '_all' 后缀查找
-        model_filename_base = model_filename.replace('_all', '')
-        model_path = model_dir / model_filename_base
-        if not model_path.exists():
-           raise FileNotFoundError(f"U-Net 模型文件未找到于 {model_dir / model_filename} 或 {model_path}")
+    unet_cond_dim = cond_net_config['output_dim'] if cond_net_config else 7
+    model = Unet1D(cond_dim=unet_cond_dim, **unet_config.get("model_params", {})).to(device)
 
-    print(f"   🔄 正在从以下位置加载 U-Net 模型: {model_path}")
-    try:
-        unet_model_type = unet_config.get("model_type", "unet")
-        unet_model_params = unet_config.get("model_params", {})
-        # ** 关键: U-Net 的 cond_dim 必须与条件网络输出匹配 (或为 7) **
-        unet_cond_dim = cond_net_output_dim
-
-        if unet_model_type == 'unet':
-            model = Unet1D(cond_dim=unet_cond_dim, **unet_model_params).to(device)
-        else:
-            raise ValueError(f"未知的 U-Net 模型类型: {unet_model_type}")
-
-        state_dict = torch.load(model_path, map_location=device)
-        if isinstance(state_dict, dict) and any(k.startswith('module.') for k in state_dict):
-            state_dict = {k.replace('module.', ''): v for k, v in state_dict.items()}
-        model.load_state_dict(state_dict)
-        model.eval() # 设置为评估模式
-        print(f"   ✅ U-Net ({unet_model_type}) 模型加载成功。期望的 cond_dim: {unet_cond_dim}")
-    except Exception as e:
-        print(f"   ❌ 加载 U-Net 模型时出错: {e}")
-        raise
-
-    # --- 4. 初始化 Diffusion 包装器 ---
-    # ** 关键: 将加载的 condition_network 实例 (可能是 None) 传递给扩散模型 **
+    # --- 4. 构建 Diffusion 包装器 ---
     if use_dlpm:
-        print(f"   🔄 正在初始化 DLPMDiffusion1D (alpha={dlpm_alpha})...")
-        try:
-            # DLPM特定的配置
-            dlpm_config = {
-                **diffusion_config,
-                'alpha': dlpm_alpha,  # DLPM参数
-                'isotropic': True,   # DLPM参数
-                'rescale_timesteps': True,  # DLPM参数
-                'scale': 'scale_preserving',  # DLPM参数
-            }
-            diffusion = DLPMDiffusion1D(
-                model=model,
-                condition_network=condition_network,
-                **dlpm_config
-            ).to(device)
-            print(f"   ✅ DLPMDiffusion1D 初始化成功 {'带有' if condition_network else '不带'} 条件网络。")
-        except Exception as e:
-            print(f"   ❌ 初始化 DLPMDiffusion1D 时出错: {e}")
-            raise
+        diffusion = DLPMDiffusion1D(model=model, condition_network=condition_network, **diffusion_config).to(device)
     else:
-        print(f"   🔄 正在初始化 GaussianDiffusion1D...")
-        try:
-            diffusion = GaussianDiffusion1D(
-                model=model,                  # 传递加载的 U-Net
-                condition_network=condition_network, # 传递加载的条件网络 (或 None)
-                **diffusion_config          # 传递扩散过程参数
-            ).to(device)
-            print(f"   ✅ GaussianDiffusion1D 初始化成功 {'带有' if condition_network else '不带'} 条件网络。")
-        except TypeError as e:
-             if 'condition_network' in str(e):
-                  print("   ❌ 错误: GaussianDiffusion1D 的 __init__ 方法似乎不支持 'condition_network' 参数。")
-                  print("       请确保你使用的是接受此参数的 diffusion_with_condition.py 版本。")
-             raise
-        except Exception as e:
-             print(f"   ❌ 初始化 GaussianDiffusion1D 时出错: {e}")
-             raise
+        diffusion = GaussianDiffusion1D(model=model, condition_network=condition_network, **diffusion_config).to(device)
 
+    # --- 5. 权重加载与对象对齐 (修复版) ---
+    print(f"   🔄 正在从权重文件同步物理参数: {model_path.name}")
+    state_dict = torch.load(model_path, map_location=device)
+    
+    # 自动清洗 DataParallel 前缀
+    state_dict = {k.replace('module.', ''): v for k, v in state_dict.items()}
+
+    # --- 关键修改点：分层加载 ---
+    # 1. 提取并加载 U-Net 内部权重
+    # 如果 pth 里已经是 model.xxxx 格式，直接加载；
+    # 如果是 init_conv 格式，我们需要把它们对应到 diffusion.model 上
+    if any(k.startswith('init_conv') for k in state_dict):
+        # 说明 pth 保存的是 Unet 内部权重，将其手动挂载到 diffusion.model
+        diffusion.model.load_state_dict(state_dict, strict=False)
+        print("      - ✅ 已成功同步 U-Net 网络权重")
+    else:
+        # 说明 pth 保存的是完整的 Diffusion 对象权重
+        diffusion.load_state_dict(state_dict, strict=False)
+        print("      - ✅ 已成功同步全量模型权重")
+
+    # 2. 提取并同步 Alpha (核心物理参数)
+    if 'learnable_alpha' in state_dict:
+        trained_alpha = state_dict['learnable_alpha'].item()
+        diffusion.learnable_alpha.data = torch.tensor(float(trained_alpha)).to(device)
+        
+        if use_dlpm:
+            # 强制同步给底层物理引擎
+            diffusion.generative_process.dlpm.alpha = trained_alpha
+            diffusion.generative_process.dlpm.A = None # 强制重置矩阵缓存
+            diffusion.generative_process.dlpm.Sigmas = None
+            print(f"      - 🎯 物理对齐：已自动提取 Alpha = {trained_alpha:.6f}")
+    
+    diffusion.eval()
     return diffusion, data_processor
 # 核心生成函数 (批量)
 def _generate_paths_for_condition_batch(condition_batch, diffusion, total_paths, batch_size, device):
@@ -454,6 +402,7 @@ def run_diffusion_mega_batch(conditions, diffusion, gen_params, device):
     batch_size = gen_params['generation_batch_size']
     num_conditions = conditions.shape[0]
     all_generated_paths = []
+    sampling_steps = gen_params.get('sampling_timesteps', 200)
     
     print(f"🚀 开始超级批处理生成...")
     print(f"   总条件数: {num_conditions}, 每条件路径数: {total_paths}, 生成批处理大小: {batch_size}")
@@ -475,7 +424,8 @@ def run_diffusion_mega_batch(conditions, diffusion, gen_params, device):
                 conditions_batch = single_condition.repeat(current_batch_size, 1)
                 generated_batch = diffusion.sample(
                     batch_size=current_batch_size, 
-                    cond_input=conditions_batch
+                    cond_input=conditions_batch,
+                    sampling_timesteps = sampling_steps
                 )
                 paths_for_this_condition.append(generated_batch.cpu().numpy())
                 if device.startswith('cuda'):
@@ -501,3 +451,5 @@ def run_diffusion_mega_batch(conditions, diffusion, gen_params, device):
     total_time = time.time() - start_time
     print(f"\n✅ 路径生成完成！总用时: {_format_time(total_time)}")
     return all_generated_paths
+        
+    

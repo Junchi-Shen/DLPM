@@ -45,31 +45,27 @@ def calculate_lookback_payoff(paths, maturity_steps, **kwargs):
     return payoffs
 
 def calculate_accumulator_payoff(paths, maturity_steps, start_price, strike_pct, ko_pct):
-    """累计收益期权 (Accumulator)"""
     strike_price = start_price * strike_pct
     knock_out_barrier = start_price * ko_pct
-    
     relevant_paths = get_relevant_paths(paths, maturity_steps)
     num_paths = relevant_paths.shape[0]
     total_payoffs = np.zeros(num_paths)
 
     for i in range(num_paths):
         path = relevant_paths[i]
-        accumulated_pnl = 0
-        
-        for t in range(1, len(path)): # 从 t=1 (第二天) 开始
+        accumulated_pnl_pct = 0 # 记录比例盈亏
+        for t in range(1, len(path)):
             current_price = path[t]
-            
             if current_price >= knock_out_barrier:
-                break # 敲出，终止
-
+                break 
+            
+            # 将绝对价差转化为相对于初始价格的比例
+            pnl_pct = (current_price - strike_price) / start_price
             if current_price >= strike_price:
-                accumulated_pnl += (current_price - strike_price)
+                accumulated_pnl_pct += pnl_pct
             else:
-                accumulated_pnl += 2 * (current_price - strike_price)
-        
-        total_payoffs[i] = accumulated_pnl
-        
+                accumulated_pnl_pct += 2 * pnl_pct # 跌破行权价双倍吸筹
+        total_payoffs[i] = accumulated_pnl_pct
     return total_payoffs
 
 def calculate_snowball_payoff(paths, maturity_steps, start_price, ko_pct, ki_pct, coupon_rate, obs_freq_days):

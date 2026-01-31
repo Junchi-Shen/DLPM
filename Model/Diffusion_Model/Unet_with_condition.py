@@ -70,9 +70,12 @@ class Block(Module):
 
         if exists(scale_shift):
             scale, shift = scale_shift
+            scale = torch.clamp(scale, -10.0, 10.0)
+            shift = torch.clamp(shift, -10.0, 10.0)
             x = x * (scale + 1) + shift
 
         x = self.act(x)
+        x = torch.clamp(x, -1e4, 1e4)
         return self.dropout(x)
 
 class ResnetBlock(Module):
@@ -277,6 +280,9 @@ class Unet1D(Module):
         self.final_res_block = resnet_block(init_dim * 2, init_dim)
         self.final_conv = nn.Conv1d(init_dim, self.out_dim, 1)
 
+        self.tanh = nn.Tanh()
+        self.output_scaling = 10.0
+
     def forward(self, y, time, y_self_cond = None, cond_input = None):
         if self.self_condition:
             y_self_cond = default(y_self_cond, lambda: torch.zeros_like(y))
@@ -344,4 +350,6 @@ class Unet1D(Module):
         y = torch.cat((y, r), dim = 1)
 
         y = self.final_res_block(y, t, c)  # 传递条件嵌入
-        return self.final_conv(y)
+        y = self.final_conv(y)
+        y = self.tanh(y) * self.output_scaling
+        return y

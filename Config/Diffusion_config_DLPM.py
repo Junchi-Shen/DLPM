@@ -16,7 +16,7 @@ main_config = {
     
     # DLPM parameters (可选，如果使用DLPM)
     'use_dlpm': True,  # 是否使用DLPM而不是标准DDPM
-    'dlpm_alpha': 2,  # DLPM的alpha参数 (1 < alpha <= 2, alpha=2时退化为高斯)
+    'dlpm_alpha': 1.8,  # DLPM的alpha参数 (1 < alpha <= 2, alpha=2时退化为高斯)
     'dlpm_isotropic': True,  # DLPM是否各向同性
     'dlpm_rescale_timesteps': True,  # DLPM是否重新缩放时间步
     'dlpm_scale': 'scale_preserving',  # DLPM调度类型

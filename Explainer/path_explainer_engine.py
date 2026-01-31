@@ -172,7 +172,11 @@ class PathExplainerEngine:
                 raise AttributeError(f"Project_Path.py 缺少 '{proc_dir_key}' 变量")
 
             processor_folder = self.spec.get('processor_source_folder', data_folder)
-            proc_file_path = proc_dir / processor_folder / self.spec['processor_filename']
+            processor_type_subfolder = self.spec.get('processor_type_subfolder', None)
+            if processor_type_subfolder:
+                proc_file_path = proc_dir / processor_type_subfolder / processor_folder / self.spec['processor_filename']
+            else:
+                proc_file_path = proc_dir / processor_folder / self.spec['processor_filename']
 
             if not proc_file_path.exists():
                 raise FileNotFoundError(f"DataProcessor 未找到: {proc_file_path}")

@@ -207,8 +207,15 @@ class PathGeneratorEngine: # 重命名类以示清晰
         if model_base_dir is None: raise AttributeError(f"Project_Path.py 缺少 '{model_dir_root_key}'")
 
         # 处理 'all' vs 特定资产路径
+        # model_folder_name = self.spec.get('model_source_folder', self.asset_name)
+        # model_dir = model_base_dir / model_folder_name
+
         model_folder_name = self.spec.get('model_source_folder', self.asset_name)
-        model_dir = model_base_dir / model_folder_name
+        model_type_subfolder = self.spec.get('model_type_subfolder', None)
+        if model_type_subfolder:
+            model_dir = model_base_dir / model_type_subfolder / model_folder_name
+        else:
+            model_dir = model_base_dir / model_folder_name
 
         if not model_dir.exists():
             raise FileNotFoundError(f"模型产出物目录未找到: {model_dir}。请确保已为 '{self.asset_name}' 运行训练。")

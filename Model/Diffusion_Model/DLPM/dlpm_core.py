@@ -329,7 +329,7 @@ class DLPM:
         nonzero_mask = ((t_batch != 1).float().view(-1, *([1] * (len(x_t.shape) - 1))))
         
         # 添加数值稳定性检查
-        eps = torch.clamp(eps, min=-1e6, max=1e6)  # 防止eps过大
+        eps = torch.clamp(eps, min=-2, max=2) # 防止eps过大
         g = torch.clamp(g, min=1e-8)  # 防止除零
         bs = torch.clamp(bs, min=1e-8)
         bs_prev = torch.clamp(bs_prev, min=1e-8)
@@ -343,6 +343,7 @@ class DLPM:
             if torch.isnan(sample).any() or torch.isinf(sample).any():
                 print(f"警告: DDIM采样中出现NaN/Inf, t={t_val}, 使用x_t作为回退")
                 sample = torch.where(torch.isnan(sample) | torch.isinf(sample), x_t, sample)
+            sample = torch.clamp(sample, min=-5.0, max=5.0)
             return sample, torch.zeros_like(x_t)
         
         # 随机采样（eta > 0）
@@ -350,6 +351,7 @@ class DLPM:
         
         # 计算均值
         sample = (x_t - bs*eps) / (g + 1e-8)
+        sample = torch.clamp(sample, min=-2.0, max=2.0)
         
         # 计算第二项，需要处理数值稳定性
         bs_prev_alpha = torch.clamp(bs_prev, min=1e-8)**(self.alpha)
@@ -467,7 +469,9 @@ class DLPM:
         
         Gamma_t = self.compute_Gamma_t(t, Sigma_t_1_val, Sigma_t_val)
         g, bg, s, bs = self.get_schedule_at_t(t, x_t.shape)
-        x_t_1 = (x_t - bs*Gamma_t*eps) / g
+        #x_t_1 = (x_t - bs*Gamma_t*eps) / g
+        x_t_1 = (x_t - bs*Gamma_t*eps) / (g + 1e-8)
+        x_t_1 = torch.clamp(x_t_1, min=-3.0, max=3.0)
         Sigma_t_1 = self.compute_Sigma_tilde_t_1(Gamma_t, Sigma_t_1_val)
         return x_t_1, Sigma_t_1
 

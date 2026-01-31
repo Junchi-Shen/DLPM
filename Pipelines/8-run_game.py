@@ -23,7 +23,6 @@ if __name__ == '__main__':
     # A. 定义要回测的标的资产列表:
     TARGET_ASSETS = [
         'CSI1000',
-        'CSI300',
     ]
     
     # B. 定义要在 *每个* 资产上运行的合约列表:
@@ -42,16 +41,17 @@ if __name__ == '__main__':
     # ---------------------------------------------------------
     
     # --- !! D. 新增：定义 P 模型的固定交易成本 (相对阈值) !! ---
-    P_FIXED_TRADE_COST_THRESHOLD = 0.05 # 例如 5%
+    P_FIXED_TRADE_COST_THRESHOLD = 0.05 # 例如 3%
     # ---------------------------------------------------------
 
     # --- 2. 通用模型配置 (所有任务共享) ---
     MODEL_CONFIG = {
-            "P_model_type": 'unet',
-            "P_paths_filename_base": "unet_generated_paths",
+            "P_model_type": 'dlpm',
+            "P_paths_filename_base": "dlpm_generated_paths",
             "processor_source_folder": "all",
-            "Q_model_type": 'mc', 
-            "Q_paths_filename_base": "gbm_generated_paths", 
+            'processor_type_subfolder': 'Diffusion_Model_DLPM',
+            "Q_model_type": 'garch', 
+            "Q_paths_filename_base": "garch_paths_fitted", 
         }
     # ----------------------------------------------------
 
@@ -99,14 +99,29 @@ if __name__ == '__main__':
             
             # 强制使用百分比价差风格 (因为测试的是百分比)
             current_contract_spec['spread_style'] = 'percentage'  #
-            # 应用当前的 Q 贪婪度 (Spread 值)
-            current_contract_spec['spread_value'] = q_greed_level #
-            
             # 强制使用相对阈值风格 (因为 P 成本是百分比)
             current_contract_spec['trade_threshold_style'] = 'relative' #
-            # 应用固定的 P 交易成本 (Threshold 值)
-            current_contract_spec['trade_threshold_value'] = P_FIXED_TRADE_COST_THRESHOLD #
-            # --- !! 修改结束 !! ---
+            if contract_name == 'my_snowball_A':
+                # --- 雪球：利率套利模式 ---
+                # 缩放 Spread 量级：原本 0.4 的贪婪度对利率太夸张，缩放到 0.04 (4% 的利差点差)
+                total_spread = q_greed_level * 0.05
+                current_contract_spec['spread_value'] = total_spread
+                current_contract_spec['trade_threshold_style']='absolute'
+                current_contract_spec['spread_style'] ='absolute'
+                half_spread = total_spread / 2
+                current_contract_spec['trade_threshold_value'] = half_spread * 1.2
+            
+            elif contract_name == 'my_accumulator':
+                # --- 累加器：比例套利模式 ---
+                # 累加器的估值通常较小，也需要较低的 Spread 和门槛
+                current_contract_spec['spread_value'] = q_greed_level * 0.5
+                current_contract_spec['trade_threshold_value'] = 0.01  # 1% 的比例差异即交易
+            
+            else:
+                # --- 其他期权 (Vanilla/Asian/Lookback) ---
+                # 保持原始的高波动套利参数
+                current_contract_spec['spread_value'] = q_greed_level
+                current_contract_spec['trade_threshold_value'] = P_FIXED_TRADE_COST_THRESHOLD
 
             # 5.3 构建当前任务的完整配置
             current_config = {

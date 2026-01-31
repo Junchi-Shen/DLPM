@@ -80,7 +80,8 @@ python Pipelines/2-Merge_Datasets.py
 python Pipelines/3-Dataset_Explaination.py
 
 # 训练扩散模型
-python Pipelines/4-Run_Diffusion.py
+python Pipelines/4-Run_Diffusion_DDPM.py
+python Pipelines/4-Run_Diffusion_DLPM.py
 
 # 训练GARCH模型
 python Pipelines/5-Run_Garch_Fitting.py

@@ -14,7 +14,7 @@ CONTRACT_SPECS = {
         "spread_style": "percentage",  # 'percentage' (百分比) 或 'absolute' (绝对值)
         "spread_value": 0.40,
         "trade_threshold_style": "relative", # 'relative' (相对) 或 'absolute' (绝对)
-        "trade_threshold_value": 0.1,
+        "trade_threshold_value": 0.03,
         "report_style": "pnl" # 'pnl' (原始盈亏) 或 'notional' (名义本金)
     },
 
@@ -26,7 +26,7 @@ CONTRACT_SPECS = {
         "spread_style": "percentage",
         "spread_value": 0.40,
         "trade_threshold_style": "relative",
-        "trade_threshold_value": 0.1,
+        "trade_threshold_value": 0.03,
         "report_style": "pnl"
     },
 
@@ -38,7 +38,7 @@ CONTRACT_SPECS = {
         "spread_style": "percentage",
         "spread_value": 0.40,
         "trade_threshold_style": "relative",
-        "trade_threshold_value": 0.1,
+        "trade_threshold_value": 0.03,
         "report_style": "pnl"
     },
     
@@ -49,11 +49,11 @@ CONTRACT_SPECS = {
             "strike_pct": 0.8,
             "ko_pct": 1.5
         },
-        "pricing_style": "discounted",
+        "pricing_style": "rate",
         "spread_style": "percentage",
         "spread_value": 0.40,
         "trade_threshold_style": "relative",
-        "trade_threshold_value": 0.1,
+        "trade_threshold_value": 0.03,
         "report_style": "pnl"
     },
 
@@ -70,7 +70,7 @@ CONTRACT_SPECS = {
         "spread_style": "absolute",
         "spread_value": 0.02,
         "trade_threshold_style": "absolute",
-        "trade_threshold_value": 0.01,
+        "trade_threshold_value": 0.005,
         "report_style": "notional"
     }
 

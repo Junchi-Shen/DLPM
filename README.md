@@ -81,7 +81,10 @@ python Pipelines/3-Dataset_Explaination.py
 
 # 训练扩散模型
 python Pipelines/4-Run_Diffusion_DDPM.py
-python Pipelines/4-Run_Diffusion_DLPM.py
+
+# Or  python Pipelines/4-Run_Diffusion_DLPM.py 
+
+# 二选一即可 若生成比对实验 两个同时运行 
 
 # 训练GARCH模型
 python Pipelines/5-Run_Garch_Fitting.py

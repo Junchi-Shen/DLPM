@@ -4,6 +4,10 @@
 
 本项目是一个综合性的金融市场分析与模拟系统，主要用于金融时间序列的建模、预测和策略回测。项目结合了传统的GARCH模型和现代的扩散模型（Diffusion Model）进行金融数据建模，并提供了丰富的解释工具和回测框架。
 
+## DLPM 框架逻辑摘要（Framework Summary）
+
+Our framework consists of a **forward process** that corrupts input sequences with Lévy-driven noise (skewed Lévy variables \(A_t\) and symmetric \(\alpha\)-stable noise \(\varepsilon\)) under a scale-preserving schedule parameterized by a stable index \(\alpha\), followed by a **denoising network** (conditioned 1D U-Net) that predicts the noise \(\varepsilon\) at each diffusion step. We add a **multi-metric alignment loss** that matches the generated paths to the data in global volatility, heavy-tail (kurtosis), volatility clustering, spectrum, drift, relative jumps, quantiles, and skewness, with EMA-normalized and SNR-weighted terms; the stable index \(\alpha\) is learnable in \((1.5, 2.0)\) to adapt tail heaviness and jump behavior. Sampling supports both full reverse steps (using posterior mean/variance from the Lévy process) and **DDIM-style** accelerated deterministic sampling.
+
 ## 主要功能
 
 1. **多市场数据获取**：支持中国和美国市场的股票和指数数据获取
@@ -100,6 +104,9 @@ python Pipelines/8-run_game.py
 
 # 回测结果解释
 python Pipelines/9-Run_game_explainer.py
+
+# 最终图表输出
+python Pipelines/10-Summary_Statistic.py
 ```
 
 ## 主要模块说明

@@ -26,10 +26,10 @@ if __name__ == '__main__':
     
     # 修改：从单个作业改为作业列表
     JOBS_TO_VALIDATE = [
-        #'validate_gbm',
-        #'validate_garch',
+        # 'validate_gbm',
+        # 'validate_garch',
         'validate_dlpm',
-        'validate_ddpm'
+        # 'validate_ddpm'
         ]
     # -------------------------------------
     

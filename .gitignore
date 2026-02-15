@@ -1,6 +1,6 @@
 # 跑出来的结果目录（不提交、不上传）
 Results/
-Result/
+Result
 
 # 训练/测试产生的临时数据
 Dataset/Trainning_Dataset/temp_*.csv
@@ -15,3 +15,4 @@ __pycache__/
 # 可选：整个 Dataset 下的生成数据若也不想上传，可加
 # Dataset/Trainning_Dataset/*.csv
 # Dataset/Testing_Dataset/*.csv
+Results.zip

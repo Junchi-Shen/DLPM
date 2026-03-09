@@ -11,7 +11,7 @@ PATH_JOBS = {
         # 修正: "pathss" -> "paths"
         "paths_filename_base": "unet_generated_paths", # <-- 修正 (应与 generator_config.py 一致)
         
-        "data_asset_folder":  "CSI1000", 
+        "data_asset_folder":  "SP500", 
         "processor_source_folder": "all",
         "processor_dir_key": "Model_Results_DIR", 
         "processor_filename": "data_processor_all.pkl" 

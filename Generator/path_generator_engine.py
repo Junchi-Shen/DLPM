@@ -126,7 +126,7 @@ class PathGeneratorEngine: # 重命名类以示清晰
             asset_to_filter = self.asset_name
             if self.asset_name.lower() == 'all':
                 # 'all' 模型也需要一个 *具体* 资产的条件来生成
-                asset_to_filter = self.spec.get('representative_asset_for_val', 'CSI1000') 
+                asset_to_filter = self.spec.get('representative_asset_for_val', 'SP500') 
                 print(f"   ⚠️ 'all' 模型作业将使用代表性资产 '{asset_to_filter}' 的条件。")
 
             # !! 关键假设 !! 
@@ -172,7 +172,7 @@ class PathGeneratorEngine: # 重命名类以示清晰
         if self.asset_name.lower() == 'all':
              # 如果是 'all' 作业，需要决定加载哪个资产的 GARCH 参数
              # 可能需要从配置指定，或使用默认值
-             asset_for_garch_params = self.spec.get('representative_asset_for_garch', 'CSI1000') # 示例
+             asset_for_garch_params = self.spec.get('representative_asset_for_garch', 'SP500') # 示例
              print(f"   ⚠️ 使用代表性资产 '{asset_for_garch_params}' 的 GARCH 参数为 'all' 作业。")
 
         params_path = params_base_dir / asset_for_garch_params / filename

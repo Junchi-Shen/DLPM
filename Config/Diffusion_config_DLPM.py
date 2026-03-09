@@ -9,7 +9,7 @@ main_config = {
     "base_trading_days": 252,
 
     # Diffusion process parameters
-    'timesteps': 1000,
+    'timesteps': 500,
     'objective': 'pred_x0',       # Example objective
     'auto_normalize': False,     # Example setting
     'seq_length': 252,           # Should match input_sequence_length
@@ -22,7 +22,7 @@ main_config = {
     'dlpm_scale': 'scale_preserving',  # DLPM调度类型
 
     # Training parameters
-    'train_num_steps': 25000,
+    'train_num_steps': 1000,
     'warmup_ratio': 0.15,
     'train_batch_size': 64,      # Example batch size
     'train_lr': 1e-6,            # Example learning rate

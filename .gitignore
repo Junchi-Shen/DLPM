@@ -16,3 +16,6 @@ __pycache__/
 # Dataset/Trainning_Dataset/*.csv
 # Dataset/Testing_Dataset/*.csv
 Results.zip
+token.md
+
+*.zip

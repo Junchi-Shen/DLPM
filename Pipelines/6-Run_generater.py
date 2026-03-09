@@ -23,22 +23,22 @@ if __name__ == '__main__':
     # --- 1. 定义所有要运行的作业 ---
     # (job_name 必须匹配 generator_config.py)
     # (asset 必须是 'all' 或 'CSI1000' 等具体资产名)
-    # JOBS_TO_RUN = [
-    #     {'job_name': 'GARCH', 'asset': 'CSI1000'},
-    #     {'job_name': 'GBM',  'asset': 'CSI1000'},  # 启用 GBM 路径生成（回测需要）
-    #     {'job_name': 'DLPM', 'asset': 'CSI1000'}  # 已生成，可注释掉
-    # ]
     JOBS_TO_RUN = [
         {'job_name': 'GARCH', 'asset': 'CSI1000'},
-        {'job_name': 'GBM',  'asset': 'CSI1000'},
-        {'job_name': 'DLPM', 'asset': 'CSI1000'},
-        {'job_name': 'DDPM', 'asset': 'CSI1000'}
+        {'job_name': 'GBM',  'asset': 'CSI1000'},  # 启用 GBM 路径生成（回测需要）
+        {'job_name': 'DLPM', 'asset': 'CSI1000'}  # 已生成，可注释掉
     ]
+    # JOBS_TO_RUN = [
+    #     {'job_name': 'GARCH', 'asset': 'SP500'},
+    #     {'job_name': 'GBM',  'asset': 'SP500'},
+    #     {'job_name': 'DLPM', 'asset': 'SP500'},
+    #     {'job_name': 'DDPM', 'asset': 'SP500'}
+    # ]
     # -------------------------------
 
     # --- 2. 设置全局生成参数 ---
     # 所有作业将使用相同的路径数量
-    NUM_PATHS_TO_GENERATE = 100# <-- 在这里修改为你想要的值 should be 100 
+    NUM_PATHS_TO_GENERATE = 10# <-- 在这里修改为你想要的值 should be 100 
     # ------------------------------------
 
     # --- 3. 定义环境 ---

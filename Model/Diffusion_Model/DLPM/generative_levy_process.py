@@ -73,7 +73,7 @@ class GenerativeLevyProcess:
         """前向扩散过程：从x_0采样x_t"""
         return self.dlpm.sample_x_t_from_xstart(x_start, t, eps)
 
-    def p_mean_variance(self, model, x, t, clip_denoised=False, denoised_fn=None, model_kwargs=None):
+    def p_mean_variance(self, model, x, t, clip_denoised=False, denoised_fn=None, model_kwargs=None, eps_only=False):
         """计算p(x_{t-1}|x_t)的均值和方差"""
         def process_xstart(x):
             if denoised_fn is not None:
@@ -130,6 +130,10 @@ class GenerativeLevyProcess:
 
             model_eps = self.dlpm.predict_eps(x_t=x, t=t, xstart=model_xstart)
 
+        # 确定性 DLIM 只需要 eps，不必（也不能）触碰依赖 A/Sigma 的 DLPM 后验
+        if eps_only:
+            return {'eps': model_eps, 'mean': None, 'variance': None}
+
         # 计算后验均值和方差
         # 注意：这里假设批次中所有样本在同一时间步（训练时通常如此）
         # 如果批次中时间步不同，需要为每个样本单独处理
@@ -183,9 +187,19 @@ class GenerativeLevyProcess:
                 model_kwargs=model_kwargs,
             )
             yield out
-            img = out["sample"]
+            img = self._trust_region_clamp(model, out["sample"], i - 1)
 
-    def p_sample_loop(self, model, shape, noise=None, clip_denoised=False, 
+    def _trust_region_clamp(self, model, x, t_idx):
+        """把反向链状态限制在网络可表示区域 ±(bargamma_t*X0MAX + barsigma_t*EPSMAX)。
+        网络输出被 tanh*output_scaling 封顶，超出该区域的状态无法被去噪、
+        会被 1/gamma 逐步放大成爆炸路径；区域内的重尾行为完全保留。"""
+        t_idx = max(0, min(int(t_idx), len(self.dlpm.bargammas) - 1))
+        eps_max = float(getattr(model, 'output_scaling', 10.0))
+        x0_max = 8.0
+        lim = float(self.dlpm.bargammas[t_idx]) * x0_max + float(self.dlpm.barsigmas[t_idx]) * eps_max
+        return x.clamp(-lim, lim)
+
+    def p_sample_loop(self, model, shape, noise=None, clip_denoised=False,
                      denoised_fn=None, model_kwargs=None, progress=False, get_sample_history=False):
         """采样循环"""
         if progress:
@@ -214,88 +228,52 @@ class GenerativeLevyProcess:
                 return final['sample'], torch.stack(x_hist)
             return final["sample"]
 
-    def ddim_sample(self, model, x, t, clip_denoised=False, denoised_fn=None, 
+    def ddim_sample(self, model, x, t, t_prev=None, clip_denoised=False, denoised_fn=None,
                    model_kwargs=None, eta=0.0):
-        """使用DDIM采样x_{t-1}"""
-        try:
-            out = self.p_mean_variance(
-                model, x, t,
-                clip_denoised=clip_denoised,
-                denoised_fn=denoised_fn,
-                model_kwargs=model_kwargs,
-            )
-            eps = out['eps']
-            
-            # 检查eps是否有NaN或Inf
-            if torch.isnan(eps).any() or torch.isinf(eps).any():
-                t_val = t[0].item() if isinstance(t, torch.Tensor) and len(t) > 0 else (t if isinstance(t, int) else 0)
-                # 只在t=0时打印警告，避免输出过多
-                if t_val == 0:
-                    nan_count = torch.isnan(eps).sum().item()
-                    inf_count = torch.isinf(eps).sum().item()
-                    total_count = eps.numel()
-                    # 只在NaN/Inf比例较高时打印（避免每个样本都打印）
-                    if nan_count + inf_count > total_count * 0.01:  # 超过1%才打印
-                        print(f"警告: 模型输出的eps包含NaN/Inf, t={t_val}, NaN: {nan_count}/{total_count}, Inf: {inf_count}/{total_count}, 使用零值替换")
-                eps = torch.where(torch.isnan(eps) | torch.isinf(eps), torch.zeros_like(eps), eps)
-            
-            # 限制eps的范围，防止数值爆炸
-            eps = torch.clamp(eps, min=-10.0, max=10.0)
-            
-            model_mean, model_variance = self.dlpm.anterior_mean_variance_dlim(x, t, eps, eta=eta)
-            
-            # 检查并处理NaN和Inf
-            if torch.isnan(model_mean).any() or torch.isinf(model_mean).any():
-                t_val = t[0].item() if isinstance(t, torch.Tensor) and len(t) > 0 else (t if isinstance(t, int) else 0)
-                print(f"警告: anterior_mean_variance_dlim返回的mean包含NaN/Inf, t={t_val}, 使用x作为回退")
-                model_mean = torch.where(torch.isnan(model_mean) | torch.isinf(model_mean), x, model_mean)
-            
-            if torch.isnan(model_variance).any() or torch.isinf(model_variance).any():
-                print(f"警告: anterior_mean_variance_dlim返回的variance包含NaN/Inf, 使用零值替换")
-                model_variance = torch.where(torch.isnan(model_variance) | torch.isinf(model_variance), 
-                                            torch.zeros_like(model_variance), model_variance)
-            
-            # 确定性采样（eta == 0.0）
-            if eta == 0.0:
-                return {"sample": model_mean}
-            
-            # 随机采样（eta > 0.0）
-            noise = torch.randn_like(x)
-            nonzero_mask = ((t != 1).float().view(-1, *([1] * (len(x.shape) - 1))))
-            # 确保方差非负
-            model_variance = torch.clamp(model_variance, min=0.0, max=1e6)  # 限制最大值防止溢出
-            sample = model_mean + nonzero_mask * torch.sqrt(model_variance + 1e-8) * noise
-            
-            # 最终检查
-            if torch.isnan(sample).any() or torch.isinf(sample).any():
-                print(f"警告: DDIM采样结果包含NaN/Inf，使用x作为回退")
-                sample = torch.where(torch.isnan(sample) | torch.isinf(sample), x, sample)
-            
-            return {"sample": sample}
-        except Exception as e:
-            print(f"错误: DDIM采样过程中发生异常: {e}")
-            # 返回x作为回退
-            return {"sample": x}
+        """DLIM update from schedule step t to schedule step t_prev (skip-aware)."""
+        out = self.p_mean_variance(
+            model, x, t,
+            clip_denoised=clip_denoised,
+            denoised_fn=denoised_fn,
+            model_kwargs=model_kwargs,
+            eps_only=(eta == 0.0),
+        )
+        eps = out['eps']
+
+        if not torch.isfinite(eps).all():
+            print(f"警告: 模型输出eps包含NaN/Inf (t={int(t.reshape(-1)[0])}), 使用零值替换")
+            eps = torch.where(torch.isfinite(eps), eps, torch.zeros_like(eps))
+
+        model_mean, model_variance = self.dlpm.anterior_mean_variance_dlim(
+            x, t, eps, t_prev=t_prev, eta=eta)
+
+        if eta == 0.0:
+            return {"sample": model_mean}
+
+        noise = torch.randn_like(x)
+        nonzero_mask = ((t != 1).float().view(-1, *([1] * (len(x.shape) - 1))))
+        model_variance = torch.clamp(model_variance, min=0.0)
+        sample = model_mean + nonzero_mask * torch.sqrt(model_variance + 1e-8) * noise
+        return {"sample": sample}
 
     def ddim_sample_loop_progressive(self, model, shape, noise=None, clip_denoised=False,
                                     denoised_fn=None, model_kwargs=None, eta=0.0, sampling_timesteps=None):
-        """渐进式DDIM采样循环"""
+        """渐进式DLIM采样循环（跳步时把子序列的下一步 t_prev 传入更新公式）"""
         assert self.device is not None
         assert isinstance(shape, (tuple, list))
 
-        # 使用完整的reverse_steps来初始化A和Sigmas
-        # 虽然DDIM只采样部分时间步，但需要完整的序列
-        if self.dlpm.A is None or self.dlpm.Sigmas is None:
+        # A/Sigmas 只在随机 DLIM (eta>0) 的方差项中用到；确保形状匹配当前批次
+        if eta > 0.0 and (self.dlpm.A is None or self.dlpm.A.shape[1:] != tuple(shape)):
             self.dlpm.sample_A(shape, self.reverse_steps)
             self.dlpm.compute_Sigmas()
-        
-        # 如果指定了sampling_timesteps，创建跳步的时间序列
+
         if sampling_timesteps is not None and sampling_timesteps < self.reverse_steps:
-            # 创建跳步的时间序列
-            times = torch.linspace(self.reverse_steps - 1, 0, sampling_timesteps + 1, device=self.device)
-            indices = times.int().tolist()
+            times = torch.linspace(self.reverse_steps - 1, 0, sampling_timesteps + 1)
+            indices = times.round().int().tolist()
         else:
-            indices = list(range(self.reverse_steps-1, 0, -1))
+            indices = list(range(self.reverse_steps - 1, -1, -1))
+        # 相邻对 (t, t_prev)：确定性更新精确地把噪声水平从 bs[t] 降到 bs[t_prev]
+        time_pairs = list(zip(indices[:-1], indices[1:]))
 
         if noise is not None:
             img = noise
@@ -303,18 +281,18 @@ class GenerativeLevyProcess:
             img = self.dlpm.barsigmas[-1] * self.dlpm.gen_eps.generate(size=shape)
         yield {'sample': img}
 
-        # indices已在上面定义
-        for i in indices:
+        for i, i_prev in time_pairs:
             t = torch.tensor([i] * shape[0], device=self.device)
             out = self.ddim_sample(
                 model, img, t,
+                t_prev=i_prev,
                 clip_denoised=clip_denoised,
                 denoised_fn=denoised_fn,
                 model_kwargs=model_kwargs,
                 eta=eta,
             )
             yield out
-            img = out["sample"]
+            img = self._trust_region_clamp(model, out["sample"], i_prev)
 
     def ddim_sample_loop(self, model, shape, noise=None, clip_denoised=False,
                         denoised_fn=None, model_kwargs=None, progress=False,

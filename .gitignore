@@ -20,3 +20,11 @@ token.md
 
 
 *.zip
+# 预训练权重（体积大，不上传）
+Pretrained/
+# LaTeX 中间产物
+Paper/*.aux
+Paper/*.log
+Paper/*.out
+.DS_Store
+**/.DS_Store

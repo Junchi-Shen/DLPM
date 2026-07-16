@@ -270,131 +270,57 @@ class DLPM:
         m_tilde_t_1 = (x_t - bs*Gamma_t*eps_t) / g
         return m_tilde_t_1
 
-    def anterior_mean_variance_dlim(self, x_t, t, eps, eta=0.0):
-        """计算DLIM（DDIM版本）的后验均值和方差"""
-        # 确保t是批次张量
+    def anterior_mean_variance_dlim(self, x_t, t, eps, t_prev=None, eta=0.0):
+        """DLIM (deterministic, DDIM-analogue) update from step t to step t_prev.
+
+        x_t = bg_t * x0 + bs_t * eps  =>  x0_hat = (x_t - bs_t * eps) / bg_t
+        x_{t_prev} = bg_{t_prev} * x0_hat + bs_{t_prev} * eps
+                   = (bg_{t_prev}/bg_t) * (x_t - bs_t * eps) + bs_{t_prev} * eps
+
+        t_prev is the schedule index of the NEXT state in the (possibly
+        skipping) sampling subsequence; defaults to t-1 (adjacent step).
+        """
         t_batch = self.get_t_to_batch_size(x_t, t)
-        
-        # 获取时间步值
+
         if isinstance(t, int):
             t_val = t
         elif isinstance(t, torch.Tensor):
-            if t.numel() == 1:
-                t_val = int(t.item())
-            else:
-                t_val = int(t_batch[0].item())
+            t_val = int(t.reshape(-1)[0].item())
         else:
             t_val = int(t)
-        
-        # 确保t_val在有效范围内
         t_val = max(1, min(t_val, len(self.gammas) - 1))
-        
-        # 获取当前时间步的调度值
-        try:
-            g, bg, s, bs = self.get_schedule_at_t(t, x_t.shape)
-        except Exception as e:
-            print(f"错误: 获取调度值时出错, t={t_val}, 错误: {e}")
-            # 回退：直接使用索引
-            t_idx = min(t_val, len(self.gammas) - 1)
-            g = self.gammas[t_idx].item()
-            bg = self.bargammas[t_idx].item()
-            s = self.sigmas[t_idx].item()
-            bs = self.barsigmas[t_idx].item()
-            # 扩展到x_t的形状
-            g = torch.full_like(x_t, g)
-            bg = torch.full_like(x_t, bg)
-            s = torch.full_like(x_t, s)
-            bs = torch.full_like(x_t, bs)
-        
-        # 获取前一个时间步的调度值
-        try:
-            if t_val > 0:
-                g_prev, bg_prev, s_prev, bs_prev = self.get_schedule_at_t(t_val - 1, x_t.shape)
-            else:
-                g_prev, bg_prev, s_prev, bs_prev = self.get_schedule_at_t(0, x_t.shape)
-        except Exception as e:
-            print(f"错误: 获取前一时间步调度值时出错, t={t_val}, 错误: {e}")
-            # 回退
-            t_prev_idx = max(0, t_val - 1)
-            g_prev = self.gammas[t_prev_idx].item()
-            bg_prev = self.bargammas[t_prev_idx].item()
-            s_prev = self.sigmas[t_prev_idx].item()
-            bs_prev = self.barsigmas[t_prev_idx].item()
-            g_prev = torch.full_like(x_t, g_prev)
-            bg_prev = torch.full_like(x_t, bg_prev)
-            s_prev = torch.full_like(x_t, s_prev)
-            bs_prev = torch.full_like(x_t, bs_prev)
-        
-        # 计算nonzero_mask（t != 1时添加噪声）
-        nonzero_mask = ((t_batch != 1).float().view(-1, *([1] * (len(x_t.shape) - 1))))
-        
-        # 添加数值稳定性检查
-        eps = torch.clamp(eps, min=-2, max=2) # 防止eps过大
-        g = torch.clamp(g, min=1e-8)  # 防止除零
-        bs = torch.clamp(bs, min=1e-8)
-        bs_prev = torch.clamp(bs_prev, min=1e-8)
-        
+
+        tp_val = t_val - 1 if t_prev is None else int(t_prev)
+        tp_val = max(0, min(tp_val, t_val - 1))
+
+        g, bg, s, bs = self.get_schedule_at_t(t_val, x_t.shape)
+        g_p, bg_p, s_p, bs_p = self.get_schedule_at_t(tp_val, x_t.shape)
+
+        ratio = bg_p / bg.clamp(min=1e-12)
+
         if eta == 0.0:
-            # 确定性采样（完全DDIM）
-            # 公式: x_{t-1} = (x_t - bs[t]*eps) / g[t] + bs[t-1]*eps
-            # 注意：这里bs和g已经是提取的值，形状匹配x_t
-            sample = (x_t - bs*eps) / (g + 1e-8) + bs_prev*eps
-            # 检查NaN和Inf
-            if torch.isnan(sample).any() or torch.isinf(sample).any():
-                print(f"警告: DDIM采样中出现NaN/Inf, t={t_val}, 使用x_t作为回退")
-                sample = torch.where(torch.isnan(sample) | torch.isinf(sample), x_t, sample)
-            sample = torch.clamp(sample, min=-5.0, max=5.0)
+            sample = ratio * (x_t - bs * eps) + bs_p * eps
+            if not torch.isfinite(sample).all():
+                print(f"警告: DLIM采样出现NaN/Inf, t={t_val}->{tp_val}, 使用x_t回退")
+                sample = torch.where(torch.isfinite(sample), sample, x_t)
             return sample, torch.zeros_like(x_t)
-        
-        # 随机采样（eta > 0）
-        sigma_t = eta * bs_prev
-        
-        # 计算均值
-        sample = (x_t - bs*eps) / (g + 1e-8)
-        sample = torch.clamp(sample, min=-2.0, max=2.0)
-        
-        # 计算第二项，需要处理数值稳定性
-        bs_prev_alpha = torch.clamp(bs_prev, min=1e-8)**(self.alpha)
-        sigma_t_alpha = torch.clamp(sigma_t, min=0.0)**(self.alpha)
-        diff_alpha = bs_prev_alpha - sigma_t_alpha
-        
-        # 确保diff_alpha >= 0（数值稳定性）
-        diff_alpha = torch.clamp(diff_alpha, min=1e-10)
-        diff_term = diff_alpha**(1 / self.alpha)
-        
-        sample = sample + diff_term * eps
-        mean = sample
-        
-        # 检查NaN和Inf
-        if torch.isnan(mean).any() or torch.isinf(mean).any():
-            print(f"警告: DDIM采样均值中出现NaN/Inf, t={t_val}, eta={eta}, 使用x_t作为回退")
-            mean = torch.where(torch.isnan(mean) | torch.isinf(mean), x_t, mean)
-        
-        # 计算方差（需要A[t]）
-        if self.A is not None and len(self.A) > t_val:
-            A_t = self.A[t_val]
-            # 处理A_t的形状
-            while len(A_t.shape) > len(x_t.shape):
-                if A_t.shape[0] == 1:
-                    A_t = A_t.squeeze(0)
-                else:
-                    A_t = A_t[0]
-            # 确保形状匹配
-            if A_t.shape != x_t.shape:
-                if A_t.shape[0] == 1:
-                    A_t = A_t.expand(x_t.shape)
-                else:
-                    A_t = A_t[:x_t.shape[0]]
-            # 确保A_t >= 0
-            A_t = torch.clamp(A_t, min=1e-10)
-            variance = nonzero_mask * sigma_t**2 * A_t
+
+        # stochastic DLIM (eta > 0)
+        sigma_t = eta * bs_p
+        diff_alpha = torch.clamp(bs_p ** self.alpha - torch.clamp(sigma_t, min=0.0) ** self.alpha, min=0.0)
+        diff_term = diff_alpha ** (1.0 / self.alpha)
+        mean = ratio * (x_t - bs * eps) + diff_term * eps
+        if not torch.isfinite(mean).all():
+            print(f"警告: DLIM均值出现NaN/Inf, t={t_val}->{tp_val}, 使用x_t回退")
+            mean = torch.where(torch.isfinite(mean), mean, x_t)
+
+        nonzero_mask = ((t_batch != 1).float().view(-1, *([1] * (len(x_t.shape) - 1))))
+        if self.A is not None and len(self.A) > t_val and self.A[t_val].shape == x_t.shape:
+            A_t = torch.clamp(self.A[t_val], min=1e-10)
+            variance = nonzero_mask * sigma_t ** 2 * A_t
         else:
-            variance = nonzero_mask * sigma_t**2
-        
-        # 确保方差非负
-        variance = torch.clamp(variance, min=0.0)
-        
-        return mean, variance
+            variance = nonzero_mask * sigma_t ** 2
+        return mean, torch.clamp(variance, min=0.0)
 
     def anterior_mean_variance_dlpm(self, x_t, t, eps):
         """计算DLPM的后验均值和方差"""
@@ -469,9 +395,7 @@ class DLPM:
         
         Gamma_t = self.compute_Gamma_t(t, Sigma_t_1_val, Sigma_t_val)
         g, bg, s, bs = self.get_schedule_at_t(t, x_t.shape)
-        #x_t_1 = (x_t - bs*Gamma_t*eps) / g
-        x_t_1 = (x_t - bs*Gamma_t*eps) / (g + 1e-8)
-        x_t_1 = torch.clamp(x_t_1, min=-3.0, max=3.0)
+        x_t_1 = (x_t - bs*Gamma_t*eps) / g.clamp(min=1e-8)
         Sigma_t_1 = self.compute_Sigma_tilde_t_1(Gamma_t, Sigma_t_1_val)
         return x_t_1, Sigma_t_1
 

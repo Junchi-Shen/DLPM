@@ -2,10 +2,14 @@
 # (已修改为支持多任务和多“Q贪婪度”(Spread)测试)
 
 import sys
+import json
+import argparse
 import traceback
 from pathlib import Path
-import itertools 
-import copy 
+import itertools
+import copy
+
+import numpy as np
 
 current_file_dir = Path(__file__).parent.resolve()
 project_root = current_file_dir.parent
@@ -16,7 +20,35 @@ import Config.option_config as option_config
 from Game.backtest_engine import Backtester
 
 
+def summarize_run(backtester, spec):
+    """从回测结果 DataFrame 提取机器可读汇总"""
+    df = backtester.results_df
+    trades = df[df['交易类型'] != 'No Trade']
+    n = len(trades)
+    if n == 0:
+        return {'trades': 0, 'cum_pnl': 0.0, 'win_rate': None, 'sharpe': None,
+                'longs': 0, 'shorts': 0}
+    pnl = trades['P模型盈亏']
+    scale = 1_000_000 if spec.get('report_style') == 'notional' else 1.0
+    std = pnl.std()
+    return {
+        'trades': int(n),
+        'cum_pnl': float(pnl.sum() * scale),
+        'avg_pnl': float(pnl.mean() * scale),
+        'win_rate': float((pnl > 0).mean()),
+        'sharpe': float(pnl.mean() / std * np.sqrt(252)) if std > 1e-9 else 0.0,
+        'longs': int((trades['交易类型'] == 'P_Buy').sum()),
+        'shorts': int((trades['交易类型'] == 'P_Sell').sum()),
+    }
+
+
 if __name__ == '__main__':
+    cli = argparse.ArgumentParser()
+    cli.add_argument('--p_base', default='dlpm_generated_paths')
+    cli.add_argument('--q_base', default='garch_paths_fitted')
+    cli.add_argument('--p_label', default='dlpm')
+    cli.add_argument('--out_json', default=None)
+    args = cli.parse_args()
     
     # --- !! 1. 在这里定义所有要运行的回测任务 !! ---
     
@@ -41,17 +73,17 @@ if __name__ == '__main__':
     # ---------------------------------------------------------
     
     # --- !! D. 新增：定义 P 模型的固定交易成本 (相对阈值) !! ---
-    P_FIXED_TRADE_COST_THRESHOLD = 0.05 # 例如 3%
+    P_FIXED_TRADE_COST_THRESHOLD = 0.10 # 论文口径：相对价差超过10%才交易
     # ---------------------------------------------------------
 
     # --- 2. 通用模型配置 (所有任务共享) ---
     MODEL_CONFIG = {
             "P_model_type": 'dlpm',
-            "P_paths_filename_base": "dlpm_generated_paths",
+            "P_paths_filename_base": args.p_base,
             "processor_source_folder": "all",
             'processor_type_subfolder': 'Diffusion_Model_DLPM',
-            "Q_model_type": 'garch', 
-            "Q_paths_filename_base": "garch_paths_fitted", 
+            "Q_model_type": 'gbm' if 'gbm' in args.q_base else 'garch',
+            "Q_paths_filename_base": args.q_base,
         }
     # ----------------------------------------------------
 
@@ -80,8 +112,9 @@ if __name__ == '__main__':
 
     # --- 5. 循环执行所有任务 ---
     failed_tasks = []
+    all_summaries = {}
     # (修改循环变量)
-    for asset, contract_name, q_greed_level in all_tasks: 
+    for asset, contract_name, q_greed_level in all_tasks:
         
         # (修改) task_id 包含 q_greed_level
         task_id = f"{contract_name}_Qgreed{q_greed_level:.1f}/{asset}" 
@@ -133,9 +166,11 @@ if __name__ == '__main__':
             }
         
             # 5.4 运行回测 (传入修改后的 contract_spec)
-            backtester = Backtester(current_config, current_contract_spec) 
+            backtester = Backtester(current_config, current_contract_spec)
             backtester.run(**BACKTEST_PARAMS)
-        
+            all_summaries[f'{contract_name}|{q_greed_level:.1f}'] = summarize_run(
+                backtester, current_contract_spec)
+
             print(f"✅ 任务 '{task_id}' 执行完毕。")
             
         # ... (后续的 except 错误处理逻辑保持不变, 只需更新 task_id) ...
@@ -159,6 +194,15 @@ if __name__ == '__main__':
 
     # --- 6. 最终总结 ---
     # (保持不变)
+    if args.out_json:
+        out_path = Path(args.out_json)
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(out_path, 'w') as f:
+            json.dump({'p_label': args.p_label, 'p_base': args.p_base,
+                       'q_base': args.q_base, 'summaries': all_summaries}, f,
+                      indent=2, ensure_ascii=False)
+        print(f"📊 汇总已写入 {out_path}")
+
     print(f"\n==========================================================")
     print(f"✅ 所有 {len(all_tasks)} 个回测任务执行完毕。")
     if failed_tasks:

@@ -308,10 +308,13 @@ class Trainer1D(object):
                         self.ema.ema_model.eval()
                         with torch.no_grad():
                             milestone = self.step // self.save_and_sample_every
+                            n = self.num_samples
+                            if self.eval_conditions is not None:
+                                n = min(n, self.eval_conditions.shape[0])
                             all_samples = self.ema.ema_model.sample(
-                                batch_size=self.num_samples,
-                                cond_input=self.eval_conditions,
-                                mask=self.eval_masks
+                                batch_size=n,
+                                cond_input=self.eval_conditions[:n] if self.eval_conditions is not None else None,
+                                mask=self.eval_masks[:n] if self.eval_masks is not None else None
                             )
                         torch.save(all_samples, str(self.results_folder / f"sample-{milestone}.pt"))
                         self.save(milestone)

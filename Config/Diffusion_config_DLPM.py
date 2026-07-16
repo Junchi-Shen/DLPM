@@ -1,4 +1,6 @@
-# Config/Diffusion_config.py
+# Config/Diffusion_config_DLPM.py
+# DLPM (Denoising Lévy Probabilistic Model, arXiv:2407.18609) 配置
+# 使用论文标准损失：A条件化的 eps 预测 + Lp 目标
 
 main_config = {
     "underlying_asset": 'all',
@@ -10,38 +12,41 @@ main_config = {
 
     # Diffusion process parameters
     'timesteps': 500,
-    'objective': 'pred_x0',       # Example objective
-    'auto_normalize': False,     # Example setting
-    'seq_length': 252,           # Should match input_sequence_length
-    
-    # DLPM parameters (可选，如果使用DLPM)
-    'use_dlpm': True,  # 是否使用DLPM而不是标准DDPM
-    'dlpm_alpha': 1.8,  # DLPM的alpha参数 (1 < alpha <= 2, alpha=2时退化为高斯)
-    'dlpm_isotropic': True,  # DLPM是否各向同性
-    'dlpm_rescale_timesteps': True,  # DLPM是否重新缩放时间步
-    'dlpm_scale': 'scale_preserving',  # DLPM调度类型
+    'auto_normalize': False,
+    'seq_length': 252,
+
+    # DLPM parameters
+    'use_dlpm': True,
+    'dlpm_alpha': 1.8,            # 稳定指数 α ∈ (1, 2]; α=2 退化为高斯DDPM
+    'dlpm_isotropic': True,
+    'dlpm_scale': 'scale_preserving',
+
+    # 论文标准损失 (Sec. 3, arXiv:2407.18609)
+    'dlpm_lploss': 2.0,           # Lp 目标; p=2 -> 每样本 L2 范数(不平方), 对 α>1 有限
+    'dlpm_monte_carlo_outer': 1,  # a_t 的蒙特卡洛外层样本数
+    'dlpm_monte_carlo_inner': 1,  # 内层 z 样本数
+    'dlpm_loss_monte_carlo': 'mean',  # 'mean' | 'median' (median-of-means)
+    'dlpm_clamp_a': 100.0,        # 论文建议的数值稳定性截断 (仅截 a_t 的极端抽样)
+    'dlpm_clamp_eps': None,
 
     # Training parameters
-    'train_num_steps': 1000,
+    'train_num_steps': 4000,
     'warmup_ratio': 0.15,
-    'train_batch_size': 64,      # Example batch size
-    'train_lr': 1e-6,            # Example learning rate
-    'ema_decay': 0.995,          # Example EMA decay
-    'amp': False,                 # Example mixed precision setting
-    # 'trainer_params': {...}, # Optionally group trainer params here
+    'train_batch_size': 64,
+    'train_lr': 1e-4,
+    'ema_decay': 0.995,
+    'amp': False,
 
     # --- U-Net Specific Parameters ---
     "unet_params": {
-        "dim": 64,                 # <<<--- **ADD THIS LINE** (Choose 8, 64, or another suitable value)应该是64开始
-        "dim_mults": (1, 2, 4, 8), # Parameters for Unet1D
-        "channels": 1,             # Parameters for Unet1D
-        "dropout": 0.1,            # Parameters for Unet1D
-        # "learned_variance": False, # Add other Unet1D params here if needed
+        "dim": 64,
+        "dim_mults": (1, 2, 4, 8),
+        "channels": 1,
+        "dropout": 0.1,
     },
-    # ---
 
-    # --- (Optional but Recommended) Condition Network Parameters ---
-    "use_enhanced_condition_network": True, # Control whether to use it
+    # --- Condition Network Parameters ---
+    "use_enhanced_condition_network": True,
     "cond_net_params": {
         "output_dim": 128,          # Must match Unet1D's expected cond_dim if used
         "country_emb_dim": 64,
@@ -49,15 +54,4 @@ main_config = {
         "numerical_proj_dim": 32,
         "hidden_dim": 256
     },
-    # ---
-
-    # --- (Optional) Trainer Parameters (Alternative grouping) ---
-    # "trainer_params": {
-    #     "train_batch_size": 64,
-    #     "train_lr": 1e-6,
-    #     "gradient_accumulate_every": 1,
-    #     "ema_decay": 0.995,
-    #     "amp": True,
-    #     "save_and_sample_every": 1000
-    # },
 }

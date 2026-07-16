@@ -1,4 +1,5 @@
 # Config/Diffusion_config.py
+# DDPM (Gaussian diffusion) 配置 — 供 ddpm_complex / ddpm_simple 两种损失模式共用
 
 main_config = {
     "underlying_asset": 'all',
@@ -9,39 +10,36 @@ main_config = {
     "base_trading_days": 252,
 
     # Diffusion process parameters
-    'timesteps': 250,
-    'objective': 'pred_x0',       # Example objective
-    'auto_normalize': False,     # Example setting
-    'seq_length': 252,           # Should match input_sequence_length
-    
-    # DLPM parameters (可选，如果使用DLPM)
-    'use_dlpm': True,  # 是否使用DLPM而不是标准DDPM
-    'dlpm_alpha': 2,  # DLPM的alpha参数 (1 < alpha <= 2, alpha=2时退化为高斯)
-    'dlpm_isotropic': True,  # DLPM是否各向同性
-    'dlpm_rescale_timesteps': True,  # DLPM是否重新缩放时间步
-    'dlpm_scale': 'scale_preserving',  # DLPM调度类型
+    'timesteps': 500,             # 与 DLPM 保持一致，保证公平比较
+    'objective': 'pred_x0',
+    'auto_normalize': False,
+    'seq_length': 252,
+
+    # 损失模式: 'complex' = MSE + 金融统计正则项(波动聚集/厚尾/漂移/分位数/频谱等)
+    #           'simple'  = 仅标准去噪MSE (DDPM原始目标)
+    # 由 Pipelines/4-Run_Diffusion.py 的 --variant 参数覆盖
+    'loss_mode': 'complex',
+
+    'use_dlpm': False,
 
     # Training parameters
-    'train_num_steps': 15000,
+    'train_num_steps': 4000,
     'warmup_ratio': 0.15,
-    'train_batch_size': 64,      # Example batch size
-    'train_lr': 1e-6,            # Example learning rate
-    'ema_decay': 0.995,          # Example EMA decay
-    'amp': False,                 # Example mixed precision setting
-    # 'trainer_params': {...}, # Optionally group trainer params here
+    'train_batch_size': 64,
+    'train_lr': 1e-4,
+    'ema_decay': 0.995,
+    'amp': False,
 
     # --- U-Net Specific Parameters ---
     "unet_params": {
-        "dim": 64,                 # <<<--- **ADD THIS LINE** (Choose 8, 64, or another suitable value)应该是64开始
-        "dim_mults": (1, 2, 4, 8), # Parameters for Unet1D
-        "channels": 1,             # Parameters for Unet1D
-        "dropout": 0.1,            # Parameters for Unet1D
-        # "learned_variance": False, # Add other Unet1D params here if needed
+        "dim": 64,
+        "dim_mults": (1, 2, 4, 8),
+        "channels": 1,
+        "dropout": 0.1,
     },
-    # ---
 
-    # --- (Optional but Recommended) Condition Network Parameters ---
-    "use_enhanced_condition_network": True, # Control whether to use it
+    # --- Condition Network Parameters ---
+    "use_enhanced_condition_network": True,
     "cond_net_params": {
         "output_dim": 128,          # Must match Unet1D's expected cond_dim if used
         "country_emb_dim": 64,
@@ -49,15 +47,4 @@ main_config = {
         "numerical_proj_dim": 32,
         "hidden_dim": 256
     },
-    # ---
-
-    # --- (Optional) Trainer Parameters (Alternative grouping) ---
-    # "trainer_params": {
-    #     "train_batch_size": 64,
-    #     "train_lr": 1e-6,
-    #     "gradient_accumulate_every": 1,
-    #     "ema_decay": 0.995,
-    #     "amp": True,
-    #     "save_and_sample_every": 1000
-    # },
 }

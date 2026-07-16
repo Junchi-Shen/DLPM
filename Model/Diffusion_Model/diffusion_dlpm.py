@@ -1,410 +1,287 @@
+import math
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.amp import autocast
 from tqdm.auto import tqdm
-from functools import partial
-from random import random
 
-from .Utils import default, identity, normalize_to_neg_one_to_one, unnormalize_to_zero_to_one, exists
+from .Utils import default, identity, normalize_to_neg_one_to_one, exists
 from .DLPM.generative_levy_process import GenerativeLevyProcess
 from .DLPM.dlpm_core import ModelMeanType, ModelVarType
 
+
 class DLPMDiffusion1D(nn.Module):
+    """Denoising Lévy Probabilistic Model (DLPM) for 1D sequences.
+
+    Follows "Heavy-Tailed Diffusion with Denoising Lévy Probabilistic Models"
+    (Shariatian, Simsekli, Durmus; arXiv:2407.18609):
+
+      forward:  x_t = bargamma_t * x_0 + barsigma_t * eps,   eps ~ SαS (isotropic)
+      training: standard DLPM loss. Using the variance-mixing identity
+                eps = sqrt(a) * z with a ~ positive (α/2)-stable and z ~ N(0, I),
+                the network predicts the chain noise eps_t conditioned on a_t,
+                with an Lp objective (p <= α required for finite loss) and
+                optional median-of-means Monte Carlo over a_t.
+      sampling: stochastic DLPM ancestral sampling (posterior mean/variance
+                conditioned on the sampled A chain), or deterministic DLIM
+                with skip steps (the DDIM analogue).
+
+    alpha is a fixed model hyperparameter in (1, 2]; alpha = 2 recovers DDPM.
+    """
+
     def __init__(
         self,
         *,
         seq_length,
-        timesteps=1000,
+        timesteps=500,
         sampling_timesteps=None,
-        alpha=1.75,
-        objective='pred_noise',
-        auto_normalize=True,
+        alpha=1.8,
+        auto_normalize=False,
         model,
         condition_network: nn.Module = None,
         **kwargs
     ):
         super().__init__()
         self.model = model
-        
-        # 1. 属性配置与显式设置
+
+        alpha = float(alpha)
+        assert 1.0 < alpha <= 2.0, f'alpha must be in (1, 2], got {alpha}'
+        self.alpha = alpha
+
         channels_arg = kwargs.get('channels', None)
         self.channels = channels_arg if channels_arg is not None else self.model.channels
-        sc = kwargs.get('self_condition', None)
-        self.self_condition = (sc if sc is not None else getattr(self.model, 'self_condition', False))
         self.channel_first = kwargs.get('channel_first', True)
         self.seq_length = seq_length
-        self.objective = 'pred_noise' # 锁定物理层模式
+        self.objective = 'pred_noise'  # DLPM predicts the chain noise eps
 
-        # 2. Alpha 参数与条件编码
-        self.learnable_alpha = nn.Parameter(torch.tensor(float(alpha)))
         self.condition_network = condition_network
         self.has_condition_network = condition_network is not None
-        self.cond_out_dim = getattr(condition_network, 'output_dim', None) if self.has_condition_network else None
 
-        # 3. 物理引擎 (锁定 EPSILON 以适配底层断言)
         self.generative_process = GenerativeLevyProcess(
             alpha=alpha,
             device=next(model.parameters()).device,
             reverse_steps=timesteps,
             model_mean_type=ModelMeanType.EPSILON,
             model_var_type=ModelVarType.FIXED,
-            scale=kwargs.get('dlpm_scale', 'scale_preserving')
+            scale=kwargs.get('dlpm_scale', 'scale_preserving'),
         )
 
-        self.num_timesteps = timesteps
-        self.sampling_timesteps = sampling_timesteps if sampling_timesteps is not None else timesteps
-        self.ema_beta = kwargs.get('ema_beta', 0.99)
-        
-        # 4. 指标注册
-        self.metrics = ['global_vol', 'heavy_tail', 'vol_clustering', 'spectral', 'drift', 'relative_jump', 'quantile', 'skewness']
-        for name in self.metrics:
-            self.register_buffer(f'ema_{name}', torch.tensor(0.0))
+        # optional clamping of the auxiliary variable a_t (paper: numerical stability)
+        clamp_a = kwargs.get('dlpm_clamp_a', None)
+        clamp_eps = kwargs.get('dlpm_clamp_eps', None)
+        if clamp_eps is None:
+            # U-Net 输出经 tanh*output_scaling 封顶(±10)，网络无法预测超出该幅度的 eps；
+            # 采样初噪必须落在可表示范围内，否则极端元素会在反向链中被 1/gamma 放大
+            clamp_eps = float(getattr(model, 'output_scaling', 10.0))
+        self.generative_process.dlpm.gen_a.setParams(clamp_a=clamp_a)
+        self.generative_process.dlpm.gen_eps.setParams(clamp_eps=clamp_eps)
 
-        self.warmup_steps = int(kwargs.get('train_num_steps', 20000) * kwargs.get('warmup_ratio', 0.15))
+        # ---- standard DLPM loss settings (paper defaults) ----
+        # Lp exponent: must satisfy p <= alpha so that E||eps||_p^.. is finite.
+        # lploss = 2.0 -> per-sample L2 norm (not squared), 1.0 -> smooth L1.
+        self.lploss = float(kwargs.get('dlpm_lploss', 2.0))
+        self.monte_carlo_outer = int(kwargs.get('dlpm_monte_carlo_outer', 1))
+        self.monte_carlo_inner = int(kwargs.get('dlpm_monte_carlo_inner', 1))
+        self.loss_monte_carlo = kwargs.get('dlpm_loss_monte_carlo', 'mean')  # 'mean' | 'median'
+
+        self.num_timesteps = int(timesteps)
+        self.sampling_timesteps = sampling_timesteps if sampling_timesteps is not None else timesteps
+        self.ddim_sampling_eta = kwargs.get('ddim_sampling_eta', 0.0)
+
         self.auto_normalize = auto_normalize
         self.normalize = normalize_to_neg_one_to_one if auto_normalize else identity
-        self.unnormalize = identity 
-        self.ddim_sampling_eta = kwargs.get('ddim_sampling_eta', 0.0)
-        self.debug_check = kwargs.get('debug_check', False)          # 前向finite检查
-        self.debug_grad_hook = kwargs.get('debug_grad_hook', False)  # 分支项梯度hook定位
-        self.debug_raise = kwargs.get('debug_raise', False)          # 发现坏值是否直接raise（默认False保持原行为：return None）
+        self.unnormalize = identity
 
-    # --- [修正 P0-1] 工业级鲁棒辅助工具 ---
-
-    def _get_is_rank0(self):
-        dist = getattr(torch, "distributed", None)
-        if dist is None: return True
-        return (not dist.is_available()) or (not dist.is_initialized()) or (dist.get_rank() == 0)
+    # ------------------------------------------------------------------ utils
 
     def _expand_mask(self, mask, ref):
-        """[修正 P0-1] 递归补维广播，支持任意形状 Mask 输入"""
-        if mask is None: return None
+        if mask is None:
+            return None
         mask = mask.float()
         while mask.dim() < ref.dim():
-            mask = mask.unsqueeze(1) # 逐级补齐维度 (B,T) -> (B,1,T) -> (B,1,1,T)
+            mask = mask.unsqueeze(1)
         return mask.expand_as(ref) if mask.shape != ref.shape else mask
 
     def _get_condition(self, cond_input):
-        if cond_input is None: return None
-        c = cond_input.clone()
+        if cond_input is None:
+            return None
         c = torch.nan_to_num(cond_input, nan=0.0, posinf=10.0, neginf=-10.0)
-        c[:, :5] = torch.clamp(c[:, :5], min=-10.0, max=10.0)
-        if not self.has_condition_network: return c
-        if self.cond_out_dim is None:
-            return self.condition_network(c) if (cond_input.dim() == 2 and cond_input.shape[-1] == 7) else c
-        p_cond = self.condition_network(c)
-        p_cond = torch.clamp(p_cond, min=-15.0, max=15.0) # 约束 Embedding 空间量级
-        return p_cond
-       
-    def _probe_branch_grads(self, term_cache: dict, param: torch.Tensor, global_step: int, every: int = 100):
-        """
-        term_cache: 你循环里保存的 {name: term}，term 是标量Tensor
-        param: 你要定位的关键参数，例如 self.model.init_conv.weight
-        """
-        if (global_step % every) != 0:
-            return
-        if not self._get_is_rank0():
-            return
-        if param is None or (not param.requires_grad):
-            return
+        if not self.has_condition_network:
+            return c
+        return self.condition_network(c)
 
-        print(f"\n🔎 [BranchGrad Probe] step={global_step} param=init_conv.weight")
-        for name, term in term_cache.items():
-            if term is None or (not term.requires_grad):
-                continue
-            try:
-                g = torch.autograd.grad(
-                    term, param,
-                    retain_graph=True,  # 不影响后续总loss backward
-                    allow_unused=True
-                )[0]
-            except Exception as e:
-                print(f"   - {name}: grad error -> {repr(e)}")
-                continue
+    # ------------------------------------------------------------------ loss
 
-            if g is None:
-                print(f"   - {name}: grad=None (unused)")
-                continue
+    def _masked_lp(self, pred, target, m_exp, p):
+        """Per-sample Lp discrepancy restricted to valid (masked) positions."""
+        diff = pred - target
+        if p == 1.0:
+            el = F.smooth_l1_loss(pred, target, beta=1.0, reduction='none')
+        else:
+            el = diff.abs().pow(2.0 if p == 2.0 else p)
+        if m_exp is not None:
+            count = m_exp.sum(dim=list(range(1, el.dim()))).clamp(min=1.0)
+            el = (el * m_exp).sum(dim=list(range(1, el.dim()))) / count
+        else:
+            el = el.mean(dim=list(range(1, el.dim())))
+        if p == 2.0:
+            el = torch.sqrt(el + 1e-12)   # L2 norm, not squared (finite for alpha > 1)
+        elif p != 1.0:
+            el = el.pow(1.0 / p)
+        return el  # shape (B,)
 
-            finite = torch.isfinite(g)
-            nan = torch.isnan(g).sum().item()
-            inf = torch.isinf(g).sum().item()
-            mx = g[finite].abs().max().item() if finite.any() else float("nan")
-            print(f"   - {name:<15} | nan={nan:<6} inf={inf:<6} max_abs_finite={mx:.3e}")
-    @autocast('cuda', enabled=False)
-    def q_sample(self, x_start, t, eps=None):
-        return self.generative_process.q_sample(x_start=x_start, t=t, eps=eps)
-
-    def _power_spectrum(self, x, mask=None, eps=1e-8):
-        x = torch.nan_to_num(x, nan=0.0)
-        m = self._expand_mask(mask, x)
-        if m is not None:
-            mean = (x * m).sum(dim=-1, keepdim=True) / m.sum(dim=-1, keepdim=True).clamp(min=1.0)
-            x = torch.where(m > 0.5, x, mean)
-        Xf = torch.fft.rfft(x, dim=-1)
-        P = (Xf.real**2 + Xf.imag**2 + eps).sqrt()
-        max_p = P.amax(dim=-1, keepdim=True).clamp(min=1e-8)
-        return P / max_p
-
-    def _masked_statistics(self, x, m_exp, eps=1e-6):
-        if m_exp is None:
-            return x.mean(dim=-1, keepdim=True), torch.sqrt(x.var(dim=-1, keepdim=True) + eps).clamp(min=1e-5)
-        count = m_exp.sum(dim=-1, keepdim=True).clamp(min=1.0)
-        mean = (x * m_exp).sum(dim=-1, keepdim=True) / count
-        var = (((x - mean)**2) * m_exp).sum(dim=-1, keepdim=True) / count
-        std = torch.sqrt(var + eps).clamp(min=1e-5)
-        return mean, std
-
-    def _masked_quantile(self, x, mask, q: float):
-        B, C, T = x.shape
-        x_flat = x.view(B * C, T).float() # 分位数强制 FP32
-        m_flat = self._expand_mask(mask, x).view(B * C, T) if mask is not None else None
-        if m_flat is None:
-            return x_flat.quantile(q, dim=-1).view(B, C, 1), torch.ones(B, C, 1, device=x.device)
-        sample_min = x_flat.amin(dim=-1, keepdim=True).detach() - 1.0
-        x_filled = torch.where(m_flat > 0.5, x_flat, sample_min)
-        valid_gate = ((m_flat > 0.5).float().mean(dim=-1, keepdim=True) > 0.2).float()
-        return x_filled.quantile(q, dim=-1).view(B, C, 1), valid_gate.view(B, C, 1)
-
-    # --- [修正 P1-4] 黑盒拦截与异常诊断 ---
-
-    def _report_error(self, stage, x_start, pred_x0=None, model_out=None):
-        if not self._get_is_rank0(): return
-        print(f"\n🚨 [拦截报告] {stage}")
-        with torch.no_grad():
-            t_min = x_start.amin().detach().float().item(); t_max = x_start.amax().detach().float().item()
-            print(f"   - Target Range: [{t_min:.4f}, {t_max:.4f}]")
-            if pred_x0 is not None and torch.isfinite(pred_x0).all():
-                p_min = pred_x0.amin().detach().float().item(); p_max = pred_x0.amax().detach().float().item()
-                print(f"   - PredX0 Range: [{p_min:.4f}, {p_max:.4f}]")
-            if model_out is not None:
-                print(f"   - ModelOut Finite: {torch.isfinite(model_out).all().item()}")
-        print("-" * 45)
-
-    def _stats(self, x: torch.Tensor):
-        if x is None:
-            return None
-        with torch.no_grad():
-            finite = torch.isfinite(x)
-            nan_cnt = int(torch.isnan(x).sum().item())
-            inf_cnt = int(torch.isinf(x).sum().item())
-            max_abs = float(x[finite].abs().max().item()) if finite.any() else float("nan")
-            mean = float(x[finite].mean().item()) if finite.any() else float("nan")
-            std  = float(x[finite].std().item()) if finite.any() else float("nan")
-            return {
-                "shape": tuple(x.shape),
-                "dtype": str(x.dtype),
-                "nan": nan_cnt,
-                "inf": inf_cnt,
-                "max_abs_finite": max_abs,
-                "mean_finite": mean,
-                "std_finite": std,}
-
-    def _check_finite(self, name: str, x: torch.Tensor, stage: str, global_step: int, hard: bool=False):
-        """旁路检查，不改变x；hard=True时可选raise"""
-        if not self.debug_check:
-            return True
-        if x is None:
-            return True
-        ok = torch.isfinite(x).all().item()
-        if ok:
-            return True
-
-        if self._get_is_rank0():
-            print(f"\n🚨 [FiniteCheck Fail] step={global_step} stage={stage} name={name}")
-            print("   ", self._stats(x))
-            print("-" * 80)
-
-        if hard or self.debug_raise:
-            raise FloatingPointError(f"Non-finite detected at {stage}:{name} step={global_step}")
-        return False
-
-    def _make_grad_hook(self, name: str, stage: str, global_step: int):
-        """给每个分支term挂梯度hook：哪一项的梯度先炸，就打印哪一项"""
-        def _hook(grad):
-            if grad is None:
-                return grad
-            if not torch.isfinite(grad).all():
-                if self._get_is_rank0():
-                    print(f"\n🚨 [GradHook Fail] step={global_step} stage={stage} term={name}")
-                    print("   grad:", self._stats(grad))
-                    print("-" * 80)
-                if self.debug_raise:
-                    raise FloatingPointError(f"Non-finite grad at {stage}:{name} step={global_step}")
-            return grad
-        return _hook
-
-    # --- 训练核心：全链路防爆 ---
-
-    def p_losses(self, x_start, t, cond_input=None, noise=None, mask=None, global_step=0, **kwargs):
-        p_cond = self._get_condition(cond_input)
-        if p_cond is not None and not torch.isfinite(p_cond).all():
-            self._report_error("Condition NaN after cleaning", x_start)
-            return None
+    def p_losses(self, x_start, t, cond_input=None, mask=None, global_step=0, **kwargs):
+        """Standard DLPM training loss (arXiv:2407.18609)."""
         if not torch.isfinite(x_start).all():
-            print(f"❌ [数据源异常] Step {global_step} 传入的 x_start 包含 NaN")
-            return None
-        
-        
-        # [修正 P1] 入口规范化 Mask
+            raise FloatingPointError(f'x_start contains non-finite values at step {global_step}')
+
+        dlpm = self.generative_process.dlpm
+        p_cond = self._get_condition(cond_input)
+
         if mask is not None:
             mask = mask.float()
-            if mask.dim() == 2: mask = mask.unsqueeze(1)
-        
-        if not torch.isfinite(self.learnable_alpha).all():
-            self._report_error("Alpha NaN Reset", x_start)
-            with torch.no_grad(): self.learnable_alpha.copy_(torch.tensor(1.75).to(self.learnable_alpha.device))
-        with torch.amp.autocast("cuda",enabled=False): # 强制关闭此段的自动混合精度
-            current_alpha = torch.clamp(self.learnable_alpha, 1.5, 2.0).float()
-        self.generative_process.dlpm.alpha = current_alpha
-        eps_common = 1e-6
+            if mask.dim() == 2:
+                mask = mask.unsqueeze(1)
 
-        # [拦截 1] 噪声检查
-        noise = noise if noise is not None else self.generative_process.dlpm.gen_eps.generate(size=x_start.shape)
-        noise = torch.clamp(noise, -8.0, 8.0)
-        if not torch.isfinite(noise).all(): return None
-        
-        x_t, _ = self.q_sample(x_start=x_start, t=t, eps=noise)
-        m_exp = self._expand_mask(mask, x_start)
-        
-        if x_t.abs().max() > 100:
-            print(f"⚠️ [扩散爆炸预警] Step {global_step} | t={t.min().item()}~{t.max().item()} | x_t Max={x_t.abs().max().item():.2f}")
-            x_t = torch.clamp(x_t, -20.0, 20.0)
+        mco, mci = self.monte_carlo_outer, self.monte_carlo_inner
+        total_mc = mco * mci
 
-        # 1. 模型预测与自条件
-        x_self_cond = None
-        if self.self_condition and random() < 0.5:
-            with torch.no_grad():
-                out = self.model(x_t, time=t, cond_input=p_cond)
-                x_self_cond = self.generative_process.dlpm.predict_xstart(x_t, t, out).detach()
+        x0 = x_start if total_mc == 1 else x_start.repeat(total_mc, *([1] * (x_start.dim() - 1)))
+        t_ext = t if total_mc == 1 else t.repeat(total_mc)
 
-        model_out = self.model(x_t, time=t, cond_input=p_cond, y_self_cond=x_self_cond)
-        
+        # a_t ~ positive (alpha/2)-stable, one per sample (isotropic); shared across inner MC
+        outer_shape = list(x_start.shape)
+        outer_shape[0] *= mco
+        a_t = dlpm.get_one_rv_faster_sampling(outer_shape)
+        if mci > 1:
+            a_t = a_t.repeat(mci, *([1] * (a_t.dim() - 1)))
+        z_t = torch.randn_like(x0)
+
+        # x_t = bg*x0 + sqrt(a_t)*bs*z ;  eps_t = (x_t - bg*x0)/bs = sqrt(a_t)*z
+        x_t, eps_t = dlpm.get_one_rv_loss_elements(t_ext, x0, a_t, z_t)
+
+        p_cond_ext = None
+        if p_cond is not None:
+            p_cond_ext = p_cond if total_mc == 1 else p_cond.repeat(total_mc, *([1] * (p_cond.dim() - 1)))
+
+        model_out = self.model(x_t, time=t_ext, cond_input=p_cond_ext)
         if not torch.isfinite(model_out).all():
-        # 抓取崩溃现场的关键上下文
-            print(f"\n🚨 [崩溃现场采样] Step: {global_step}")
-            print(f"   - 时间步 t 范围: {t.float().mean().item():.1f}")
-            print(f"   - x_t 统计: Mean={x_t.mean().item():.4f}, Std={x_t.std().item():.4f}")
-            print(f"   - 条件输入检查: Finite={torch.isfinite(p_cond).all().item() if p_cond is not None else 'N/A'}")
+            print(f'⚠️ [DLPM] non-finite model output at step {global_step}, skipping batch')
             return None
-        
-        # [拦截 2] 输出网关
-        if not torch.isfinite(model_out).all():
-            self._report_error("Model Out NaN", x_start, model_out=model_out); return None
 
-        pred_x0_raw = self.generative_process.dlpm.predict_xstart(x_t, t, model_out)
-        pred_x0 = torch.clamp(pred_x0_raw, -2.5, 2.5)
+        m_exp = self._expand_mask(mask, x0[:x_start.shape[0]])
+        if m_exp is not None and total_mc > 1:
+            m_exp = m_exp.repeat(total_mc, *([1] * (m_exp.dim() - 1)))
 
-        # [拦截 3] PredX0 网关
-        if not torch.isfinite(pred_x0).all():
-            self._report_error("Pred_X0 NaN", x_start, pred_x0=pred_x0); return None
+        losses = self._masked_lp(model_out, eps_t, m_exp, self.lploss)
 
-        mse_un = F.smooth_l1_loss(model_out, noise, reduction='none')
-        base_loss = mse_un.mean(dim=(1, 2)).mean()
-        if not torch.isfinite(base_loss): return None
+        if self.loss_monte_carlo == 'median' and mco > 1:
+            losses = losses.reshape(mci, mco, x_start.shape[0]).mean(dim=0)
+            losses, _ = losses.median(dim=0)
+            loss = losses.mean()
+        else:
+            loss = losses.mean()
 
-        return base_loss if torch.isfinite(base_loss) else None
+        return loss if torch.isfinite(loss) else None
 
-    def _get_annealed_weights(self, global_step):
-        s = min(1.0, global_step / self.warmup_steps) if self.warmup_steps > 0 else 1.0
-        return {'global_vol': 8.0*s, 'heavy_tail': 4.0*s, 'vol_clustering': 4.0*s, 'spectral': 3.0*s, 'drift': 1*s, 'relative_jump': 2.0*s, 'quantile': 3.0*s, 'skewness': 1.5*s}
+    def forward(self, img, cond_input=None, mask=None, global_step=0, **kwargs):
+        img = self.normalize(img)
+        # t in [1, T): t=0 has bs=0 (zero noise), nothing to learn there
+        t = torch.randint(1, self.num_timesteps, (img.shape[0],), device=img.device).long()
+        return self.p_losses(img, t, cond_input=cond_input, mask=mask, global_step=global_step, **kwargs)
 
-    # --- 采样接口 ---
+    # ------------------------------------------------------------------ sampling
 
     @torch.no_grad()
     def p_sample_loop(self, shape, return_noise=False, model_forward_kwargs: dict = dict()):
-        was_training = self.model.training; self.model.eval()
-        
-        # [修正 P1] 采样阶段 Mask 规范化
+        was_training = self.model.training
+        self.model.eval()
+        dlpm = self.generative_process.dlpm
+
         mask = model_forward_kwargs.get('mask')
         if mask is not None:
             mask = mask.float()
-            if mask.dim() == 2: mask = mask.unsqueeze(1)
-            model_forward_kwargs['mask'] = mask
+            if mask.dim() == 2:
+                mask = mask.unsqueeze(1)
 
-        if self.generative_process.dlpm.A is None:
-            self.generative_process.dlpm.sample_A(shape, self.num_timesteps); self.generative_process.dlpm.compute_Sigmas()
-        
+        # fresh Lévy chain for every sampling call (A / Sigmas must match shape)
+        dlpm.sample_A(shape, self.num_timesteps)
+        dlpm.compute_Sigmas()
+
         pc = self._get_condition(model_forward_kwargs.get('cond_input'))
-        noise0 = self.generative_process.dlpm.barsigmas[-1] * self.generative_process.dlpm.gen_eps.generate(size=shape)
-        img, x_start = noise0, None
+        noise0 = dlpm.barsigmas[-1] * dlpm.gen_eps.generate(size=shape)
+        img = noise0
 
-        for t in tqdm(reversed(range(0, self.num_timesteps)), desc='DLPM Sampling'):
-            m = self._expand_mask(model_forward_kwargs.get('mask'), img)
-            if m is not None: img = img * m + noise0 * (1 - m)
-            out = self.generative_process.p_sample(self.model, img, torch.full((shape[0],), t, device=img.device, dtype=torch.long), model_kwargs={'cond_input': pc, 'y_self_cond': x_start})
-            pred_raw = out.get("pred_xstart", torch.zeros_like(img))
-            img, x_start = out["sample"], torch.clamp(pred_raw, -2.5, 2.5)
-            if t < 50: img = torch.clamp(img, -2.5, 2.5)
+        for t in tqdm(reversed(range(1, self.num_timesteps)), desc='DLPM sampling',
+                      total=self.num_timesteps - 1):
+            m = self._expand_mask(mask, img)
+            if m is not None:
+                img = img * m + noise0 * (1 - m)
+            out = self.generative_process.p_sample(
+                self.model, img,
+                torch.full((shape[0],), t, device=img.device, dtype=torch.long),
+                model_kwargs={'cond_input': pc},
+            )
+            img = out['sample']
 
-        if was_training: self.model.train()
+        if was_training:
+            self.model.train()
         img = self.unnormalize(img)
-        mf = self._expand_mask(model_forward_kwargs.get('mask'), img)
-        if mf is not None: img = img * mf + noise0 * (1 - mf)
+        mf = self._expand_mask(mask, img)
+        if mf is not None:
+            img = img * mf + noise0 * (1 - mf)
         return (img, noise0) if return_noise else img
 
-    def forward(self, img, cond_input=None, mask=None, global_step=0, **kwargs):
-        # 缺陷 1：forward 不再预处理条件，直接透传原始 tensor 
-        img = self.normalize(img)
-        t = torch.randint(0, self.num_timesteps, (img.shape[0],), device=img.device).long()
-        return self.p_losses(img, t, cond_input=cond_input, mask=mask, global_step=global_step, **kwargs)
-    
     @torch.no_grad()
-    def ddim_sample(self, shape, clip_denoised=True, model_forward_kwargs: dict = dict(), 
-                return_noise=False, sampling_timesteps=None):
-        # 1. 确定采样步数
+    def ddim_sample(self, shape, clip_denoised=False, model_forward_kwargs: dict = dict(),
+                    return_noise=False, sampling_timesteps=None):
+        """Deterministic DLIM sampling with skip steps (paper's DDIM analogue)."""
+        was_training = self.model.training
+        self.model.eval()
         steps = default(sampling_timesteps, self.sampling_timesteps)
-    
-        # 2. 生成初始噪声（固定“宇宙噪声”）
-        noise0 = self.generative_process.dlpm.barsigmas[-1] * \
-             self.generative_process.dlpm.gen_eps.generate(size=shape)
-    
-        # 3. 准备条件
-        processed_cond = self._get_condition(model_forward_kwargs.get('cond_input'))
-        ddim_model_kwargs = model_forward_kwargs.copy()
-        ddim_model_kwargs['cond_input'] = processed_cond
+        dlpm = self.generative_process.dlpm
 
-        # 4. 调用底层加速循环
+        noise0 = dlpm.barsigmas[-1] * dlpm.gen_eps.generate(size=shape)
+
+        processed_cond = self._get_condition(model_forward_kwargs.get('cond_input'))
+        ddim_model_kwargs = {'cond_input': processed_cond}
+
         img = self.generative_process.ddim_sample_loop(
-        self.model,
-        shape=shape,
-        noise=noise0,
-        clip_denoised=clip_denoised,
-        model_kwargs=ddim_model_kwargs,
-        eta=self.ddim_sampling_eta,
-        sampling_timesteps=steps, # 关键：将步数传给底层
-        progress=True             # 开启进度条显示加速后的步数
+            self.model,
+            shape=shape,
+            noise=noise0,
+            clip_denoised=clip_denoised,
+            model_kwargs=ddim_model_kwargs,
+            eta=self.ddim_sampling_eta,
+            sampling_timesteps=steps,
+            progress=True,
         )
-    
-        # 5. 后处理与 Mask 混合
+
+        if was_training:
+            self.model.train()
         img = self.unnormalize(img)
         mask = model_forward_kwargs.get('mask')
         if exists(mask):
             mask = self._expand_mask(mask, img)
             img = img * mask + noise0 * (1 - mask)
-        
         return (img, noise0) if return_noise else img
+
     @torch.no_grad()
     def sample(self, batch_size=16, cond_input=None, mask=None, return_noise=False, sampling_timesteps=None):
-        shape = (batch_size, self.channels, self.seq_length) if self.channel_first else (batch_size, self.seq_length, self.channels)
-    
-        # 确定是否使用 DDIM
+        shape = (batch_size, self.channels, self.seq_length) if self.channel_first \
+            else (batch_size, self.seq_length, self.channels)
+
         steps = default(sampling_timesteps, self.sampling_timesteps)
-        is_ddim = steps < self.num_timesteps
-    
-        # 根据判断结果调用不同的函数
-        if is_ddim:
-            print(f"🚀 Using DDIM Acceleration: {steps} steps (Total {self.num_timesteps})")
+        if steps < self.num_timesteps:
+            print(f'🚀 DLIM accelerated sampling: {steps} steps (of {self.num_timesteps})')
             return self.ddim_sample(
-            shape, 
-            sampling_timesteps=steps,
-            model_forward_kwargs={'cond_input': cond_input, 'mask': mask}, 
-            return_noise=return_noise
+                shape,
+                sampling_timesteps=steps,
+                model_forward_kwargs={'cond_input': cond_input, 'mask': mask},
+                return_noise=return_noise,
             )
-        else:
-            return self.p_sample_loop(
-            shape, 
-            model_forward_kwargs={'cond_input': cond_input, 'mask': mask}, 
-            return_noise=return_noise
+        return self.p_sample_loop(
+            shape,
+            model_forward_kwargs={'cond_input': cond_input, 'mask': mask},
+            return_noise=return_noise,
         )

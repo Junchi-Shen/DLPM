@@ -70,11 +70,13 @@ class GaussianDiffusion1D(nn.Module):
         model: Unet1D,
         channel_first = True,
         condition_network: nn.Module = None,
-       
+        loss_mode = 'complex',  # 'complex': MSE + 金融统计正则项; 'simple': 仅去噪MSE
         **kwargs
     ):
         super().__init__()
         self.model = model
+        assert loss_mode in {'complex', 'simple'}, f"loss_mode must be 'complex' or 'simple', got {loss_mode}"
+        self.loss_mode = loss_mode
         self.channels = default(channels, lambda: self.model.channels)
         self.self_condition = default(self_condition, getattr(self.model, 'self_condition', False))
 
@@ -200,7 +202,8 @@ class GaussianDiffusion1D(nn.Module):
         model_output = self.model(x, time = t, y_self_cond = x_self_cond, cond_input = processed_cond_input)
         
         # --- (后续的 x_start 和 pred_noise 推导逻辑保持不变) ---
-        maybe_clip = partial(torch.clamp, min = -1., max = 1.) if clip_x_start else identity
+        # 数据是缩放对数收益(±10%涨跌停 ≈ ±1.17)，钳位取±1.5覆盖物理范围
+        maybe_clip = partial(torch.clamp, min = -1.5, max = 1.5) if clip_x_start else identity
 
         if self.objective == 'pred_noise':
             pred_noise = model_output
@@ -230,7 +233,7 @@ class GaussianDiffusion1D(nn.Module):
         preds = self.model_predictions(x, t, x_self_cond=x_self_cond, cond_input=cond_input)
         x_start = preds.pred_x_start
         if clip_denoised:
-            x_start.clamp_(-1., 1.)
+            x_start.clamp_(-1.5, 1.5)
 
         model_mean, posterior_variance, posterior_log_variance = self.q_posterior(x_start = x_start, x_t = x, t = t)
         return model_mean, posterior_variance, posterior_log_variance, x_start
@@ -342,26 +345,19 @@ class GaussianDiffusion1D(nn.Module):
         var = ((masked_x - mean)**2 * mask).sum(dim=-1, keepdim=True) / count
         return mean, torch.sqrt(var + eps)
     def _masked_quantile(self, x, mask, q: float):
-        # x: (B, C, T) or (B, T) – we assume (B, C, T)
+        # x: (B, C, T)。向量化实现(sort+gather, MPS原生支持)：
+        # 旧版逐行布尔索引+quantile在MPS上走CPU回退，每步上百次同步且持续泄漏。
         assert 0.0 < q < 1.0
         if mask is not None and x.dim() > mask.dim():
             mask = mask.unsqueeze(1).expand_as(x)
-        if mask is None:
-            # quantile along last dim
-            return x.nanquantile(q, dim=-1, keepdim=True)
-        # flatten masked values per sample-channel
-        B, C, T = x.shape
-        x_flat = x.reshape(B*C, T)
-        m_flat = mask.reshape(B*C, T)
-        out = []
-        for i in range(B*C):
-            xi = x_flat[i][m_flat[i] > 0.5]
-            if xi.numel() == 0:
-                out.append(torch.tensor(float('nan'), device=x.device))
-            else:
-                out.append(xi.quantile(q))
-        out = torch.stack(out, dim=0).reshape(B, C, 1)
-        return out
+        valid = torch.ones_like(x) if mask is None else (mask > 0.5).to(x.dtype)
+        big = torch.finfo(x.dtype).max
+        x_fill = torch.where(valid > 0.5, x, torch.full_like(x, big))  # 无效位填+inf，升序后沉底
+        x_sorted, _ = torch.sort(x_fill, dim=-1)
+        count = valid.sum(dim=-1, keepdim=True)
+        idx = (q * (count - 1)).round().long().clamp(min=0)  # 最近秩分位数
+        out = x_sorted.gather(-1, idx)
+        return torch.where(count > 0, out, torch.zeros_like(out))
     def _masked_kurtosis(self, x, mask, eps=1e-6):
         mean, std = self._masked_statistics(x, mask, eps)
         if mask is None:
@@ -411,8 +407,14 @@ class GaussianDiffusion1D(nn.Module):
             x_eff = torch.where(mask > 0.5, x, mean)
         else:
             x_eff = x
-        Xf = torch.fft.rfft(x_eff, dim=-1)
-        P = (Xf.real**2 + Xf.imag**2).sqrt()
+        # MPS(torch<=2.2) 不支持复数反传：FFT 分支在 CPU 上计算，梯度可跨设备回传
+        orig_device = x_eff.device
+        if orig_device.type == 'mps':
+            Xf = torch.fft.rfft(x_eff.cpu(), dim=-1)
+            P = (Xf.real**2 + Xf.imag**2).sqrt().to(orig_device)
+        else:
+            Xf = torch.fft.rfft(x_eff, dim=-1)
+            P = (Xf.real**2 + Xf.imag**2).sqrt()
         P = P / (P.amax(dim=-1, keepdim=True) + eps)
         return P
     def _masked_skewness(self, x, mask, eps=1e-6):
@@ -488,6 +490,12 @@ class GaussianDiffusion1D(nn.Module):
         else:
              mse_loss = reduce(mse_loss_unreduced, 'b ... -> b', 'mean').mean()
         # ---
+
+        # --- 简单损失模式：只返回核心去噪MSE，不加任何金融统计正则项 ---
+        if self.loss_mode == 'simple':
+            if global_step % 100 == 0:
+                print(f"Step: {global_step} | MSE(simple): {mse_loss:.4f}")
+            return mse_loss
 
         # --- !! Keep ALL original custom loss calculations !! ---
         # These use pred_x_start (derived above) and x_start

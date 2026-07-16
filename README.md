@@ -6,7 +6,9 @@
 
 ## DLPM 框架逻辑摘要（Framework Summary）
 
-Our framework consists of a **forward process** that corrupts input sequences with Lévy-driven noise (skewed Lévy variables \(A_t\) and symmetric \(\alpha\)-stable noise \(\varepsilon\)) under a scale-preserving schedule parameterized by a stable index \(\alpha\), followed by a **denoising network** (conditioned 1D U-Net) that predicts the noise \(\varepsilon\) at each diffusion step. We add a **multi-metric alignment loss** that matches the generated paths to the data in global volatility, heavy-tail (kurtosis), volatility clustering, spectrum, drift, relative jumps, quantiles, and skewness, with EMA-normalized and SNR-weighted terms; the stable index \(\alpha\) is learnable in \((1.5, 2.0)\) to adapt tail heaviness and jump behavior. Sampling supports both full reverse steps (using posterior mean/variance from the Lévy process) and **DDIM-style** accelerated deterministic sampling.
+Our framework follows *Heavy-Tailed Diffusion with Denoising Lévy Probabilistic Models* (arXiv:2407.18609). The **forward process** corrupts input sequences with isotropic symmetric \(\alpha\)-stable noise under a scale-preserving schedule (fixed stable index \(\alpha \in (1, 2]\); \(\alpha = 2\) recovers Gaussian DDPM). A **conditional 1D U-Net** predicts the chain noise \(\varepsilon_t\) at each diffusion step, trained with the paper's **standard DLPM loss**: the variance-mixing representation \(\varepsilon = \sqrt{a}\,z\) (positive \((\alpha/2)\)-stable \(a_t\), Gaussian \(z\)) with an unsquared \(L_2\) objective (finite for \(\alpha > 1\)) and optional median-of-means Monte Carlo. Sampling supports full ancestral reverse steps (posterior mean/variance conditioned on the sampled Lévy chain \(A\)) and **DLIM** accelerated deterministic skip-step sampling.
+
+For the Gaussian-DDPM baselines, `diffusion_with_condition.py` supports two loss modes: `simple` (plain masked denoising MSE) and `complex` (MSE + finance-aware regularizers: volatility clustering, heavy tail, drift, quantile pinball, spectrum, jumps, skewness — EMA-normalized with annealed weights).
 
 ## 主要功能
 
@@ -83,12 +85,13 @@ python Pipelines/2-Merge_Datasets.py
 # 数据解释
 python Pipelines/3-Dataset_Explaination.py
 
-# 训练扩散模型
-python Pipelines/4-Run_Diffusion_DDPM.py
+# 训练扩散模型（统一入口，三种变体）
+python Pipelines/4-Run_Diffusion.py --variant dlpm          # DLPM 标准损失 (arXiv:2407.18609)
+python Pipelines/4-Run_Diffusion.py --variant ddpm_simple   # 高斯DDPM + 简单MSE损失
+python Pipelines/4-Run_Diffusion.py --variant ddpm_complex  # 高斯DDPM + 复杂金融损失
 
-# Or  python Pipelines/4-Run_Diffusion_DLPM.py 
-
-# 二选一即可 若生成比对实验 两个同时运行 
+# 三模型生成质量对比（训练完成后运行）
+python Pipelines/11-Compare_Models.py
 
 # 训练GARCH模型
 python Pipelines/5-Run_Garch_Fitting.py
@@ -166,7 +169,14 @@ python Pipelines/10-Summary_Statistic.py
 
 ## 运行 下列代码 以快速启动实验：
 ```
+python Pipelines/4-Run_Diffusion.py --variant dlpm && python Pipelines/5-Run_Garch_Fitting.py && python Pipelines/6-Run_generater.py && python Pipelines/7-run_path_explainer.py && python Pipelines/8-run_game.py && python Pipelines/9-Run_game_explainer.py
+```
 
-python Pipelines/4-Run_Diffusion.py && python Pipelines/5-Run_Garch_Fitting.py && python Pipelines/6-Run_generater.py && python Pipelines/7-run_path_explainer.py && python Pipelines/8-run_game.py && python Pipelines/9-Run_game_explainer.py
-
+## 三损失对比实验（论文消融）
+```
+python Pipelines/4-Run_Diffusion.py --variant ddpm_simple
+python Pipelines/4-Run_Diffusion.py --variant ddpm_complex
+python Pipelines/4-Run_Diffusion.py --variant dlpm
+python Pipelines/11-Compare_Models.py
+# 结果: Results/Model_Results/Diffusion_Comparison/comparison_results.json / comparison_table.md
 ```

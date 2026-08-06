@@ -1,0 +1,57 @@
+{
+  "suite_id": "baseline_attribution_v1",
+  "created_local": "2026-07-31",
+  "python": "python",
+  "checkpoint_every": 500,
+  "train_steps": 16000,
+  "seeds": [20260730, 20260731, 20260732],
+  "frozen_primary_model": "artifacts/checkpoints/formal_universal_v1_full_seed20260730_16000",
+  "frozen_rnq_root": "artifacts/path_archives/rnq_unitvar_cap8",
+  "training_families": [
+    {
+      "name": "contract_only_dlpm",
+      "variant": "dlpm",
+      "override": "src/dlpm/Config/baseline_contract_only_dlpm.json"
+    },
+    {
+      "name": "history_gaussian_simple",
+      "variant": "ddpm_simple",
+      "override": "src/dlpm/Config/baseline_history_common.json"
+    },
+    {
+      "name": "history_gaussian_finance",
+      "variant": "ddpm_complex",
+      "override": "src/dlpm/Config/baseline_history_common.json"
+    }
+  ],
+  "statistical_baselines": [
+    "unconditional_block_bootstrap",
+    "historical_drift_gbm",
+    "physical_student_t_garch",
+    "momentum_trend_rule"
+  ],
+  "external_baselines": [],
+  "evaluation": {
+    "checkpoint_candidates": [4000, 8000, 12000, 16000],
+    "validation_rows": 512,
+    "validation_paths": 16,
+    "test_paths": 40,
+    "sampling_steps": 50,
+    "path_metrics": [
+      "terminal_crps",
+      "path_energy_score",
+      "terminal_median_abs_error",
+      "path_coverage_90",
+      "generated_vol_ratio",
+      "tail_quantile_error",
+      "drawdown_error",
+      "abs_acf_error"
+    ],
+    "economic_contracts": ["vanilla", "asian", "lookback"],
+    "spread_points": [0.05, 0.10, 0.20],
+    "materiality_threshold_spot": 0.01,
+    "quote_se_multipliers": [0.0, 1.0, 1.96],
+    "joint_calendar_bootstrap_repetitions": 2000,
+    "joint_calendar_block_lengths": [20, 60, 90, 120, 150, 180, 252]
+  }
+}

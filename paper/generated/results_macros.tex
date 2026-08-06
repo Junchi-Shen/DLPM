@@ -1,0 +1,35 @@
+\newcommand{\PathQualityRows}{%
+History-aware DLPM & 0.0485 & 0.3368 & 0.704 & 0.882 & 0.0075 \\
+Contract-only DLPM & 0.0548 & 0.3626 & 0.735 & 0.767 & 0.0091 \\
+Gaussian DDPM, simple loss & 0.0831 & 0.5461 & 0.226 & 0.154 & 0.0124 \\
+Gaussian DDPM, finance-aware & 0.1521 & 0.9153 & 0.234 & 0.762 & 0.0100 \\
+Historical block bootstrap & 0.0486 & 0.3297 & 0.864 & 1.139 & 0.0066 \\
+Historical-drift GBM & 0.0498 & 0.3397 & 0.897 & 1.246 & 0.0102 \\
+Conditional neural SDE & 0.0579 & 0.3774 & 0.794 & 1.537 & 0.0105 \\
+Chronos-T5 zero-shot & 0.0542 & 0.3668 & 0.766 & 1.060 & 0.0093 \\
+}
+\newcommand{\EffectiveTailRows}{%
+Realized & 2.71 / 2.20 & 2.93 / 2.92 & 9.75 & 2.93 / 3.33 & 1.01 / 1.01 \\
+History-aware DLPM & 2.37 / 2.40 & 2.35 / 2.26 & 14.95 & 2.91 / 2.61 & 0.62 / 0.65 \\
+Gaussian DDPM & 2.61 / 3.53 & 1.45 / 5.23 & 39.36 & 2.99 / 8.03 & 0.01 / 0.00 \\
+Historical block bootstrap & 2.02 / 2.80 & 2.74 / 3.76 & 10.95 & 4.42 / 3.46 & 1.75 / 0.64 \\
+Historical-drift GBM & 4.28 / 4.26 & 6.77 / 6.74 & 0.33 & 1.84 / 1.84 & 0.63 / 0.25 \\
+}
+\newcommand{\MainPnlRows}{%
+Vanilla call & 0.91\% & 30.95\% & 61.27\% & 63.35\% & 0.86\% & 36.65\% & 0.06\% \\
+Asian call & 0.36\% & 13.69\% & 59.74\% & 78.16\% & 0.33\% & 21.84\% & 0.03\% \\
+Floating-strike lookback call & 0.28\% & 35.04\% & 55.96\% & 33.88\% & 0.61\% & 66.12\% & -0.33\% \\
+}
+\newcommand{\HedgedRows}{%
+Vanilla call & 30.95\% & 0.91\% & 0.33\% & 60.84\% \\
+Asian call & 13.69\% & 0.36\% & -0.04\% & 49.57\% \\
+}
+\newcommand{\SpreadRows}{%
+Vanilla & 0.91\% & 30.95\% & 0.83\% & 27.49\% & 0.66\% & 21.61\% \\
+Asian & 0.36\% & 13.69\% & 0.33\% & 12.00\% & 0.25\% & 9.06\% \\
+Floating-strike lookback & 0.28\% & 35.04\% & 0.21\% & 29.94\% & 0.17\% & 20.97\% \\
+}
+\newcommand{\StructuredRows}{%
+Accumulator & 11.01\% & 9.80\% & 9.33\% & 1.21pp & 45.82\% / 43.50\% / 52.71\% & -- \\
+Snowball & 2.45\% & 1.86\% & 1.94\% & 0.59pp & 42.40\% / 39.09\% / 49.68\% & 99.96\% / 97.52\% / 98.49\% \\
+}

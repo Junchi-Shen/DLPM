@@ -1,0 +1,562 @@
+{
+  "protocol": "joint calendar-block bootstrap; all assets share sampled blocks; P&L normalized by initial spot",
+  "windows_are_independent": false,
+  "repetitions": 2000,
+  "block_diagnostics": {
+    "20": {
+      "calendar_block_days": 20,
+      "observed_nonempty_blocks": 27,
+      "interpretation": "Primary dependence-robust inference block length."
+    },
+    "60": {
+      "calendar_block_days": 60,
+      "observed_nonempty_blocks": 9,
+      "interpretation": "Primary dependence-robust inference block length."
+    },
+    "90": {
+      "calendar_block_days": 90,
+      "observed_nonempty_blocks": 6,
+      "interpretation": "Medium-horizon sensitivity check with limited effective blocks."
+    },
+    "120": {
+      "calendar_block_days": 120,
+      "observed_nonempty_blocks": 5,
+      "interpretation": "Medium-horizon sensitivity check with limited effective blocks."
+    },
+    "150": {
+      "calendar_block_days": 150,
+      "observed_nonempty_blocks": 4,
+      "interpretation": "Medium-horizon sensitivity check with limited effective blocks."
+    },
+    "180": {
+      "calendar_block_days": 180,
+      "observed_nonempty_blocks": 3,
+      "interpretation": "Medium-horizon sensitivity check with limited effective blocks."
+    },
+    "252": {
+      "calendar_block_days": 252,
+      "observed_nonempty_blocks": 3,
+      "interpretation": "Long-dependence sensitivity check with limited effective blocks."
+    }
+  },
+  "results": {
+    "20": {
+      "g0.05_asian_call": {
+        "unconditional_mean": 0.0037764471196549214,
+        "unconditional_q025": 0.0008358067441531732,
+        "unconditional_q975": 0.007343077326193429,
+        "active_mean": 0.025136025119124883,
+        "active_q025": 0.005877239009265668,
+        "active_q975": 0.04729906251428776
+      },
+      "g0.05_lookback_call": {
+        "unconditional_mean": 0.0034374145577534274,
+        "unconditional_q025": -0.00019932026282049316,
+        "unconditional_q975": 0.006977794438791381,
+        "active_mean": 0.009493464214457627,
+        "active_q025": -0.0005267355254338744,
+        "active_q975": 0.019394361979342134
+      },
+      "g0.05_vanilla_call": {
+        "unconditional_mean": 0.008956549587587168,
+        "unconditional_q025": 0.0032189398671350626,
+        "unconditional_q975": 0.01549563536572161,
+        "active_mean": 0.027916393782077463,
+        "active_q025": 0.010205785668573128,
+        "active_q975": 0.04779237538261343
+      },
+      "g0.10_asian_call": {
+        "unconditional_mean": 0.0033912840412515187,
+        "unconditional_q025": 0.0007584044604432745,
+        "unconditional_q975": 0.00651358465031706,
+        "active_mean": 0.02576962145093937,
+        "active_q025": 0.006058558709940346,
+        "active_q975": 0.0484673992504522
+      },
+      "g0.10_lookback_call": {
+        "unconditional_mean": 0.002383718551981273,
+        "unconditional_q025": -0.0009202377920897532,
+        "unconditional_q975": 0.005596446615082385,
+        "active_mean": 0.007652768163502685,
+        "active_q025": -0.0029243503282621137,
+        "active_q975": 0.017942833495393554
+      },
+      "g0.10_vanilla_call": {
+        "unconditional_mean": 0.008200453713185387,
+        "unconditional_q025": 0.0027812022645268843,
+        "unconditional_q975": 0.014417243198682704,
+        "active_mean": 0.0282732509150717,
+        "active_q025": 0.009614245312489285,
+        "active_q975": 0.049489056995771157
+      },
+      "g0.20_asian_call": {
+        "unconditional_mean": 0.002826390329582889,
+        "unconditional_q025": 0.0003705727606610157,
+        "unconditional_q975": 0.00585055728544752,
+        "active_mean": 0.027032700473734555,
+        "active_q025": 0.0035116353233911055,
+        "active_q975": 0.053982224633550305
+      },
+      "g0.20_lookback_call": {
+        "unconditional_mean": 0.0015185847147980774,
+        "unconditional_q025": -0.00121125766365311,
+        "unconditional_q975": 0.0039999765127153196,
+        "active_mean": 0.006883140851608419,
+        "active_q025": -0.00522871987384705,
+        "active_q975": 0.01828149264627201
+      },
+      "g0.20_vanilla_call": {
+        "unconditional_mean": 0.006617610297187932,
+        "unconditional_q025": 0.0019215459714746026,
+        "unconditional_q975": 0.011927174933331716,
+        "active_mean": 0.028710203187094337,
+        "active_q025": 0.008470601496159032,
+        "active_q975": 0.05073255533699331
+      }
+    },
+    "60": {
+      "g0.05_asian_call": {
+        "unconditional_mean": 0.0036975184757747563,
+        "unconditional_q025": -0.00025000437993714025,
+        "unconditional_q975": 0.007923489597187219,
+        "active_mean": 0.024607768233787373,
+        "active_q025": -0.0017707505130845351,
+        "active_q975": 0.05068806517476831
+      },
+      "g0.05_lookback_call": {
+        "unconditional_mean": 0.0033310731865248524,
+        "unconditional_q025": -0.0005745616900518654,
+        "unconditional_q975": 0.007127597271631643,
+        "active_mean": 0.00915258545384672,
+        "active_q025": -0.001614247008086877,
+        "active_q975": 0.01940338725127004
+      },
+      "g0.05_vanilla_call": {
+        "unconditional_mean": 0.008779245009785584,
+        "unconditional_q025": 0.000969711174661445,
+        "unconditional_q975": 0.017300020248663287,
+        "active_mean": 0.02729551449642356,
+        "active_q025": 0.00339706625238419,
+        "active_q975": 0.051457016403816336
+      },
+      "g0.10_asian_call": {
+        "unconditional_mean": 0.0033190514382525262,
+        "unconditional_q025": -0.000289133808372617,
+        "unconditional_q975": 0.007208174659780176,
+        "active_mean": 0.025250888994788168,
+        "active_q025": -0.002485655114971,
+        "active_q975": 0.05349544536071815
+      },
+      "g0.10_lookback_call": {
+        "unconditional_mean": 0.002300898513043366,
+        "unconditional_q025": -0.0013889384130330836,
+        "unconditional_q975": 0.0059244508453938196,
+        "active_mean": 0.007340390231134387,
+        "active_q025": -0.004521801084119751,
+        "active_q975": 0.018686291212190478
+      },
+      "g0.10_vanilla_call": {
+        "unconditional_mean": 0.008030628156711461,
+        "unconditional_q025": 0.0005550465918188793,
+        "unconditional_q975": 0.016103496120205132,
+        "active_mean": 0.027639202209167494,
+        "active_q025": 0.0020556232017540747,
+        "active_q975": 0.05372320483255453
+      },
+      "g0.20_asian_call": {
+        "unconditional_mean": 0.0027614658126754632,
+        "unconditional_q025": -0.0006467841819545579,
+        "unconditional_q975": 0.0064834602057259475,
+        "active_mean": 0.026367155559576954,
+        "active_q025": -0.006518802232793217,
+        "active_q975": 0.06013254412301939
+      },
+      "g0.20_lookback_call": {
+        "unconditional_mean": 0.0014474182845037832,
+        "unconditional_q025": -0.00133037817563546,
+        "unconditional_q975": 0.004427729790279269,
+        "active_mean": 0.006511900108914076,
+        "active_q025": -0.006230293329526195,
+        "active_q975": 0.020374152113512862
+      },
+      "g0.20_vanilla_call": {
+        "unconditional_mean": 0.0064712775116948845,
+        "unconditional_q025": -1.4544372616319749e-05,
+        "unconditional_q975": 0.013294629665346055,
+        "active_mean": 0.027994919965914022,
+        "active_q025": -7.145058171912731e-05,
+        "active_q975": 0.054830999809425705
+      }
+    },
+    "90": {
+      "g0.05_asian_call": {
+        "unconditional_mean": 0.0035197045519057505,
+        "unconditional_q025": -0.00043672287912757224,
+        "unconditional_q975": 0.009734499369671768,
+        "active_mean": 0.022889897702884923,
+        "active_q025": -0.0031280405949089757,
+        "active_q975": 0.05960240892524717
+      },
+      "g0.05_lookback_call": {
+        "unconditional_mean": 0.003333942970456544,
+        "unconditional_q025": -0.00140595958637768,
+        "unconditional_q975": 0.008072627291432499,
+        "active_mean": 0.009081012779234426,
+        "active_q025": -0.0041005158635069655,
+        "active_q975": 0.02218744334832859
+      },
+      "g0.05_vanilla_call": {
+        "unconditional_mean": 0.008525588800100405,
+        "unconditional_q025": 0.00011846689323865036,
+        "unconditional_q975": 0.021849841414154053,
+        "active_mean": 0.02615251593349871,
+        "active_q025": 0.0004253989244209224,
+        "active_q975": 0.06471976605222841
+      },
+      "g0.10_asian_call": {
+        "unconditional_mean": 0.0031584727153131683,
+        "unconditional_q025": -0.0004541340365027413,
+        "unconditional_q975": 0.008812112351329634,
+        "active_mean": 0.023485617235212482,
+        "active_q025": -0.0035530927590529428,
+        "active_q975": 0.06260660200912654
+      },
+      "g0.10_lookback_call": {
+        "unconditional_mean": 0.0022905373584089814,
+        "unconditional_q025": -0.0021456815431727116,
+        "unconditional_q975": 0.006720094364972444,
+        "active_mean": 0.007241880145296546,
+        "active_q025": -0.007074556614833209,
+        "active_q975": 0.022117649201400413
+      },
+      "g0.10_vanilla_call": {
+        "unconditional_mean": 0.007791523526612784,
+        "unconditional_q025": -0.0002254728552249007,
+        "unconditional_q975": 0.02047961706778777,
+        "active_mean": 0.02642540827771162,
+        "active_q025": -0.0009061239172542593,
+        "active_q975": 0.0673174698764323
+      },
+      "g0.20_asian_call": {
+        "unconditional_mean": 0.002610736348750792,
+        "unconditional_q025": -0.0007724967397960214,
+        "unconditional_q975": 0.008039294428617894,
+        "active_mean": 0.02398241693307051,
+        "active_q025": -0.007526060792250237,
+        "active_q975": 0.0694556522500758
+      },
+      "g0.20_lookback_call": {
+        "unconditional_mean": 0.0014192154629769891,
+        "unconditional_q025": -0.0019436581361747883,
+        "unconditional_q975": 0.005025798275807605,
+        "active_mean": 0.006323886555791411,
+        "active_q025": -0.009297391988440807,
+        "active_q975": 0.024562946545054608
+      },
+      "g0.20_vanilla_call": {
+        "unconditional_mean": 0.006273936512175172,
+        "unconditional_q025": -0.0006010682887919195,
+        "unconditional_q975": 0.017024161424783,
+        "active_mean": 0.02654949419316467,
+        "active_q025": -0.003160402816546758,
+        "active_q975": 0.06928603941009849
+      }
+    },
+    "120": {
+      "g0.05_asian_call": {
+        "unconditional_mean": 0.0037064164947756975,
+        "unconditional_q025": 0.00033249053667648137,
+        "unconditional_q975": 0.0070200687269718395,
+        "active_mean": 0.025296488384303664,
+        "active_q025": 0.0024533973737091903,
+        "active_q975": 0.052944110514764844
+      },
+      "g0.05_lookback_call": {
+        "unconditional_mean": 0.0033313527294107632,
+        "unconditional_q025": -0.001580188280510663,
+        "unconditional_q975": 0.007619726512743978,
+        "active_mean": 0.009055759511569133,
+        "active_q025": -0.0046570859842633115,
+        "active_q975": 0.019878959683691574
+      },
+      "g0.05_vanilla_call": {
+        "unconditional_mean": 0.008742656213328915,
+        "unconditional_q025": -0.00019805594591816589,
+        "unconditional_q975": 0.016624206427890056,
+        "active_mean": 0.027264082346212606,
+        "active_q025": -0.0006797536574725595,
+        "active_q975": 0.04722946692705012
+      },
+      "g0.10_asian_call": {
+        "unconditional_mean": 0.0033277594895771328,
+        "unconditional_q025": 0.00023230505431601865,
+        "unconditional_q975": 0.0063302137633888065,
+        "active_mean": 0.026058254736147566,
+        "active_q025": 0.0019430431857206283,
+        "active_q975": 0.056349433088905616
+      },
+      "g0.10_lookback_call": {
+        "unconditional_mean": 0.0023020080977079705,
+        "unconditional_q025": -0.002006717522126419,
+        "unconditional_q975": 0.006081213750572383,
+        "active_mean": 0.007194199388420232,
+        "active_q025": -0.006962216433398427,
+        "active_q975": 0.018227285109300332
+      },
+      "g0.10_vanilla_call": {
+        "unconditional_mean": 0.007999269798991413,
+        "unconditional_q025": -0.0005913462095096043,
+        "unconditional_q975": 0.015552738319894649,
+        "active_mean": 0.027534212195288704,
+        "active_q025": -0.002260402431911884,
+        "active_q975": 0.04852137222655324
+      },
+      "g0.20_asian_call": {
+        "unconditional_mean": 0.0027726056495415625,
+        "unconditional_q025": -0.0001975520870379852,
+        "unconditional_q975": 0.005606555104950258,
+        "active_mean": 0.02751346508280056,
+        "active_q025": -0.002186560449303965,
+        "active_q975": 0.0666704856806546
+      },
+      "g0.20_lookback_call": {
+        "unconditional_mean": 0.0014446740131340396,
+        "unconditional_q025": -0.001633777524920941,
+        "unconditional_q975": 0.004165524293214859,
+        "active_mean": 0.006205938759326832,
+        "active_q025": -0.008096960312186803,
+        "active_q975": 0.01709415605732716
+      },
+      "g0.20_vanilla_call": {
+        "unconditional_mean": 0.006452895095361675,
+        "unconditional_q025": -0.0009567090122354962,
+        "unconditional_q975": 0.012926399733606184,
+        "active_mean": 0.028076527180867387,
+        "active_q025": -0.0046217178575302855,
+        "active_q975": 0.05091580469490686
+      }
+    },
+    "150": {
+      "g0.05_asian_call": {
+        "unconditional_mean": 0.003530875259615579,
+        "unconditional_q025": 0.0003411697349436315,
+        "unconditional_q975": 0.008355676873271534,
+        "active_mean": 0.02271678004376126,
+        "active_q025": 0.0024584538716533656,
+        "active_q975": 0.04639071800040355
+      },
+      "g0.05_lookback_call": {
+        "unconditional_mean": 0.0031974675745219164,
+        "unconditional_q025": -0.002850222866248126,
+        "unconditional_q975": 0.011054732588059354,
+        "active_mean": 0.008760824298003388,
+        "active_q025": -0.007980090151780877,
+        "active_q975": 0.030780278499952622
+      },
+      "g0.05_vanilla_call": {
+        "unconditional_mean": 0.008393489335309283,
+        "unconditional_q025": 3.622319447198846e-05,
+        "unconditional_q975": 0.020845869825000096,
+        "active_mean": 0.025696024422216086,
+        "active_q025": 0.00012063320727827504,
+        "active_q975": 0.060785855708193566
+      },
+      "g0.10_asian_call": {
+        "unconditional_mean": 0.003169807517374157,
+        "unconditional_q025": 0.0002172329406929736,
+        "unconditional_q975": 0.0075791730573857175,
+        "active_mean": 0.02327221633145492,
+        "active_q025": 0.0017670713158890632,
+        "active_q975": 0.04803603745959531
+      },
+      "g0.10_lookback_call": {
+        "unconditional_mean": 0.002179476822378274,
+        "unconditional_q025": -0.0034795167539418675,
+        "unconditional_q975": 0.009454532627280354,
+        "active_mean": 0.00688732733103815,
+        "active_q025": -0.011442720853331586,
+        "active_q975": 0.03062518386619634
+      },
+      "g0.10_vanilla_call": {
+        "unconditional_mean": 0.007670867453289175,
+        "unconditional_q025": -0.0003626556770350043,
+        "unconditional_q975": 0.019623925837045076,
+        "active_mean": 0.02583208489867945,
+        "active_q025": -0.0013467417980941843,
+        "active_q975": 0.06268816815148116
+      },
+      "g0.20_asian_call": {
+        "unconditional_mean": 0.0026231085734469473,
+        "unconditional_q025": -0.0002129379384066255,
+        "unconditional_q975": 0.006901597968063669,
+        "active_mean": 0.02346062393529212,
+        "active_q025": -0.0022568312888059856,
+        "active_q975": 0.05206205423734985
+      },
+      "g0.20_lookback_call": {
+        "unconditional_mean": 0.001346513389110966,
+        "unconditional_q025": -0.003023175601316384,
+        "unconditional_q975": 0.007141040870010384,
+        "active_mean": 0.006067537787322584,
+        "active_q025": -0.013699846030056929,
+        "active_q975": 0.03354235102394048
+      },
+      "g0.20_vanilla_call": {
+        "unconditional_mean": 0.006165422853411258,
+        "unconditional_q025": -0.000808255367793722,
+        "unconditional_q975": 0.0166109111978043,
+        "active_mean": 0.025745278113359648,
+        "active_q025": -0.0038415279673862015,
+        "active_q975": 0.06431225869610145
+      }
+    },
+    "180": {
+      "g0.05_asian_call": {
+        "unconditional_mean": 0.003681146172815726,
+        "unconditional_q025": 0.00013259095660338025,
+        "unconditional_q975": 0.009515216149317067,
+        "active_mean": 0.024898908805324377,
+        "active_q025": 0.000775940851095268,
+        "active_q975": 0.05564054645161191
+      },
+      "g0.05_lookback_call": {
+        "unconditional_mean": 0.0032814138078315074,
+        "unconditional_q025": -0.00011105801809566052,
+        "unconditional_q975": 0.008980594550346454,
+        "active_mean": 0.008869927430843496,
+        "active_q025": -0.0003635720483998856,
+        "active_q975": 0.023052549790653104
+      },
+      "g0.05_vanilla_call": {
+        "unconditional_mean": 0.008700098716260736,
+        "unconditional_q025": 0.0010944481742211035,
+        "unconditional_q975": 0.020772447271436376,
+        "active_mean": 0.027018456980088586,
+        "active_q025": 0.005219871335189804,
+        "active_q975": 0.05787878470502785
+      },
+      "g0.10_asian_call": {
+        "unconditional_mean": 0.0033083648761655844,
+        "unconditional_q025": -1.596950475284013e-06,
+        "unconditional_q975": 0.008653697213650103,
+        "active_mean": 0.02576809800698075,
+        "active_q025": -1.0465418365260906e-05,
+        "active_q975": 0.058317422049611045
+      },
+      "g0.10_lookback_call": {
+        "unconditional_mean": 0.002263990931280375,
+        "unconditional_q025": -0.0010731505772109246,
+        "unconditional_q975": 0.0075918831496446055,
+        "active_mean": 0.007000107755617979,
+        "active_q025": -0.0034561423300326142,
+        "active_q975": 0.022347213605274415
+      },
+      "g0.10_vanilla_call": {
+        "unconditional_mean": 0.007960916671447856,
+        "unconditional_q025": 0.0008373765794071779,
+        "unconditional_q975": 0.019428878269149814,
+        "active_mean": 0.027377907430668154,
+        "active_q025": 0.004289384474637917,
+        "active_q975": 0.059965105947861204
+      },
+      "g0.20_asian_call": {
+        "unconditional_mean": 0.0027586412593683727,
+        "unconditional_q025": -0.00046868379402763163,
+        "unconditional_q975": 0.007819392154986192,
+        "active_mean": 0.02688959578184057,
+        "active_q025": -0.00386246808886333,
+        "active_q975": 0.06473960234985393
+      },
+      "g0.20_lookback_call": {
+        "unconditional_mean": 0.0014186650639601798,
+        "unconditional_q025": -0.0012480560750891942,
+        "unconditional_q975": 0.005631292883143034,
+        "active_mean": 0.005956854035301478,
+        "active_q025": -0.005793445484364655,
+        "active_q975": 0.02276963075850703
+      },
+      "g0.20_vanilla_call": {
+        "unconditional_mean": 0.0064180830788107225,
+        "unconditional_q025": 0.00047261219271149424,
+        "unconditional_q975": 0.01603016111325708,
+        "active_mean": 0.027825146858093792,
+        "active_q025": 0.0034051680216084837,
+        "active_q975": 0.06184417186889713
+      }
+    },
+    "252": {
+      "g0.05_asian_call": {
+        "unconditional_mean": 0.003588365771125318,
+        "unconditional_q025": -8.036796439774347e-05,
+        "unconditional_q975": 0.0039875503965626675,
+        "active_mean": 0.02551246219117934,
+        "active_q025": -0.0036969263622961997,
+        "active_q975": 0.03409054385360926
+      },
+      "g0.05_lookback_call": {
+        "unconditional_mean": 0.0034152724377907655,
+        "unconditional_q025": 0.003253625203351266,
+        "unconditional_q975": 0.00413551116831763,
+        "active_mean": 0.009585066735404449,
+        "active_q025": 0.008861653628286163,
+        "active_q975": 0.01585279281188425
+      },
+      "g0.05_vanilla_call": {
+        "unconditional_mean": 0.008396956383010008,
+        "unconditional_q025": 0.0007257114043060468,
+        "unconditional_q975": 0.010409920196801372,
+        "active_mean": 0.026645911983339102,
+        "active_q025": 0.0055637874330130245,
+        "active_q975": 0.029518156461010886
+      },
+      "g0.10_asian_call": {
+        "unconditional_mean": 0.003234879645876113,
+        "unconditional_q025": -5.238658384159131e-05,
+        "unconditional_q975": 0.0034806116828381066,
+        "active_mean": 0.02652508503396527,
+        "active_q025": -0.0048195657134264,
+        "active_q975": 0.03746710963448933
+      },
+      "g0.10_lookback_call": {
+        "unconditional_mean": 0.002397482080952605,
+        "unconditional_q025": 0.0020678814032394034,
+        "unconditional_q975": 0.00323536817116665,
+        "active_mean": 0.00780093578112728,
+        "active_q025": 0.006637410331679184,
+        "active_q975": 0.01417399389273009
+      },
+      "g0.10_vanilla_call": {
+        "unconditional_mean": 0.0076712727529377285,
+        "unconditional_q025": 0.0006841210464371555,
+        "unconditional_q975": 0.009623703882184895,
+        "active_mean": 0.02692612181750578,
+        "active_q025": 0.005721739661110754,
+        "active_q975": 0.030041948023912496
+      },
+      "g0.20_asian_call": {
+        "unconditional_mean": 0.002692977690754576,
+        "unconditional_q025": 0.0,
+        "unconditional_q975": 0.0029196820882240464,
+        "active_mean": 0.028791315487425546,
+        "active_q025": 0.0,
+        "active_q975": 0.042854700424121546
+      },
+      "g0.20_lookback_call": {
+        "unconditional_mean": 0.0015041202136808782,
+        "unconditional_q025": 0.0013910900326418256,
+        "unconditional_q975": 0.002243192023281774,
+        "active_mean": 0.006761025711105676,
+        "active_q025": 0.0063904018803489105,
+        "active_q975": 0.012139627420113128
+      },
+      "g0.20_vanilla_call": {
+        "unconditional_mean": 0.0061663216365705755,
+        "unconditional_q025": 0.0003539206730564772,
+        "unconditional_q975": 0.00787031089415142,
+        "active_mean": 0.02746336686659587,
+        "active_q025": 0.006512140384239181,
+        "active_q975": 0.03016235723368777
+      }
+    }
+  }
+}

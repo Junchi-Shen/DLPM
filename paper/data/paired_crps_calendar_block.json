@@ -1,0 +1,54 @@
+{
+  "interpretation": "Negative DLPM-minus-bootstrap CRPS favors DLPM.",
+  "replications": 2000,
+  "joint_calendar_blocks": true,
+  "results": [
+    {
+      "windows": 6824,
+      "block_days": 20,
+      "effective_blocks": 27,
+      "mean_difference_dlpm_minus_bootstrap": -0.00010016072037719209,
+      "ci95_low": -0.0015430986535593086,
+      "ci95_high": 0.0013374904956804923,
+      "p_value_two_sided": 0.8985
+    },
+    {
+      "windows": 6824,
+      "block_days": 60,
+      "effective_blocks": 9,
+      "mean_difference_dlpm_minus_bootstrap": -0.00010016072037719209,
+      "ci95_low": -0.001865829616002914,
+      "ci95_high": 0.0017543588468646118,
+      "p_value_two_sided": 0.9125
+    },
+    {
+      "windows": 6824,
+      "block_days": 90,
+      "effective_blocks": 6,
+      "mean_difference_dlpm_minus_bootstrap": -0.00010016072037719209,
+      "ci95_low": -0.0020348894726270163,
+      "ci95_high": 0.0013961288812832254,
+      "p_value_two_sided": 0.9045
+    },
+    {
+      "windows": 6824,
+      "block_days": 120,
+      "effective_blocks": 5,
+      "mean_difference_dlpm_minus_bootstrap": -0.00010016072037719209,
+      "ci95_low": -0.00125838108303365,
+      "ci95_high": 0.0011266825918704695,
+      "p_value_two_sided": 0.856
+    },
+    {
+      "windows": 6824,
+      "block_days": 150,
+      "effective_blocks": 4,
+      "mean_difference_dlpm_minus_bootstrap": -0.00010016072037719209,
+      "ci95_low": -0.002016268347932096,
+      "ci95_high": 0.001630464875652292,
+      "p_value_two_sided": 0.9
+    }
+  ],
+  "group_inference_file": "paired_crps_group_inference.csv",
+  "multiple_testing": "Holm correction across six pre-specified trend/drawdown slices, separately by block length."
+}

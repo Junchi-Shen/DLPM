@@ -1,0 +1,15 @@
+{
+  "suite_id": "paper_release_template",
+  "frozen_primary_model": "artifacts/checkpoints/ema12000",
+  "frozen_rnq_root": "artifacts/path_archives/rnq_unitvar_cap8",
+  "evaluation": {
+    "test_paths": 40,
+    "sampling_steps": 50,
+    "economic_contracts": ["vanilla", "asian", "lookback"],
+    "spread_points": [0.05, 0.1, 0.2],
+    "materiality_threshold_spot": 0.01,
+    "quote_se_multipliers": [0.0, 1.0, 1.96],
+    "joint_calendar_bootstrap_repetitions": 2000,
+    "joint_calendar_block_lengths": [20, 60, 90, 120, 150, 180, 252]
+  }
+}

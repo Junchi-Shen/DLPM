@@ -1,0 +1,46 @@
+{
+  "protocol": {
+    "hedge": "one initial RN-Q central-difference delta, held to maturity",
+    "hedge_pnl": "discounted self-financing stock-leg P&L",
+    "q_delta_epsilon": 0.001,
+    "selection": "existing g=0.05 trade decisions; no re-selection after hedging"
+  },
+  "contracts": {
+    "asian_call": {
+      "windows": 6824,
+      "trades": 934,
+      "trade_rate": 0.1368698710433763,
+      "buy_share_of_active": 0.7815845824411135,
+      "sell_share_of_active": 0.21841541755888652,
+      "unhedged_pnl_over_spot": 0.0035601076669720426,
+      "hedge_pnl_over_spot": -0.003922745766285703,
+      "hedged_pnl_over_spot": -0.0003626380993136613,
+      "hedged_win_rate_active": 0.49571734475374735,
+      "unhedged_buy_contribution": 0.0032792541726237665,
+      "unhedged_sell_contribution": 0.00028085349434827647,
+      "hedged_buy_contribution": -0.000666050814173105,
+      "hedged_sell_contribution": 0.00030341271485944375,
+      "mean_delta_active": 0.5459780836856036,
+      "median_delta_active": 0.5460177540185596,
+      "max_q_value_reproduction_error": 0.0001404523252119
+    },
+    "vanilla_call": {
+      "windows": 6824,
+      "trades": 2112,
+      "trade_rate": 0.3094958968347011,
+      "buy_share_of_active": 0.6335227272727273,
+      "sell_share_of_active": 0.3664772727272727,
+      "unhedged_pnl_over_spot": 0.009129748200742385,
+      "hedge_pnl_over_spot": -0.005829282721181737,
+      "hedged_pnl_over_spot": 0.0033004654795606462,
+      "hedged_win_rate_active": 0.6084280303030303,
+      "unhedged_buy_contribution": 0.00855130773041947,
+      "unhedged_sell_contribution": 0.0005784404703229142,
+      "hedged_buy_contribution": 0.0019187799552675155,
+      "hedged_sell_contribution": 0.0013816855242931307,
+      "mean_delta_active": 0.5664053877794121,
+      "median_delta_active": 0.5635306782597438,
+      "max_q_value_reproduction_error": 0.0001486925600033
+    }
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "protocol": "Per-index terciles of pre-window 60-day state; terminal CRPS on frozen held-out paths.",
+  "states": {
+    "low_60d_trend": {
+      "windows": 2270,
+      "dlpm_terminal_crps": 0.0647564958312394,
+      "bootstrap_terminal_crps": 0.06561860943087046,
+      "relative_dlpm_improvement_pct": 1.3138248541205462
+    },
+    "middle_60d_trend": {
+      "windows": 2271,
+      "dlpm_terminal_crps": 0.0448335213844499,
+      "bootstrap_terminal_crps": 0.04361847788714408,
+      "relative_dlpm_improvement_pct": -2.7856164546813087
+    },
+    "high_60d_trend": {
+      "windows": 2283,
+      "dlpm_terminal_crps": 0.036509860584712936,
+      "bootstrap_terminal_crps": 0.03666899979202248,
+      "relative_dlpm_improvement_pct": 0.4339884049528087
+    },
+    "deep_current_drawdown": {
+      "windows": 2276,
+      "dlpm_terminal_crps": 0.06057722945016436,
+      "bootstrap_terminal_crps": 0.061937000834183534,
+      "relative_dlpm_improvement_pct": 2.1954104423937566
+    },
+    "middle_current_drawdown": {
+      "windows": 2271,
+      "dlpm_terminal_crps": 0.04334467352644879,
+      "bootstrap_terminal_crps": 0.0434518004336384,
+      "relative_dlpm_improvement_pct": 0.24654192949547238
+    },
+    "shallow_current_drawdown": {
+      "windows": 2277,
+      "dlpm_terminal_crps": 0.04209778502800153,
+      "bootstrap_terminal_crps": 0.04043894621500788,
+      "relative_dlpm_improvement_pct": -4.102082196142915
+    }
+  }
+}

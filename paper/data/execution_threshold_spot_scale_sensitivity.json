@@ -1,0 +1,427 @@
+{
+  "protocol": "fixed aligned P/Q valuations; threshold-only recomputation",
+  "threshold_mode": "spot",
+  "threshold_definition": "buy if (V_P-ask)/S0 > tau; sell if (bid-V_P)/S0 > tau",
+  "records": [
+    {
+      "relative_signal_threshold": 0.0025,
+      "spread": 0.05,
+      "contract": "asian_call",
+      "windows": 6824,
+      "trade_rate": 0.6226553341148886,
+      "buy_share_of_active": 0.67333490232996,
+      "unconditional_pnl_over_spot": 0.006410149864403702,
+      "active_pnl_over_spot": 0.010294860596538212
+    },
+    {
+      "relative_signal_threshold": 0.0025,
+      "spread": 0.05,
+      "contract": "vanilla_call",
+      "windows": 6824,
+      "trade_rate": 0.7495603751465416,
+      "buy_share_of_active": 0.5910068426197459,
+      "unconditional_pnl_over_spot": 0.011841456274082389,
+      "active_pnl_over_spot": 0.015797868546302683
+    },
+    {
+      "relative_signal_threshold": 0.0025,
+      "spread": 0.1,
+      "contract": "asian_call",
+      "windows": 6824,
+      "trade_rate": 0.5754689331770223,
+      "buy_share_of_active": 0.6852559205500381,
+      "unconditional_pnl_over_spot": 0.006025079071324877,
+      "active_pnl_over_spot": 0.010469859837718604
+    },
+    {
+      "relative_signal_threshold": 0.0025,
+      "spread": 0.1,
+      "contract": "vanilla_call",
+      "windows": 6824,
+      "trade_rate": 0.6893317702227433,
+      "buy_share_of_active": 0.594812925170068,
+      "unconditional_pnl_over_spot": 0.010898989706930418,
+      "active_pnl_over_spot": 0.015810949353761306
+    },
+    {
+      "relative_signal_threshold": 0.0025,
+      "spread": 0.2,
+      "contract": "asian_call",
+      "windows": 6824,
+      "trade_rate": 0.4851992966002345,
+      "buy_share_of_active": 0.7082452431289641,
+      "unconditional_pnl_over_spot": 0.005337184857691993,
+      "active_pnl_over_spot": 0.010999984738414424
+    },
+    {
+      "relative_signal_threshold": 0.0025,
+      "spread": 0.2,
+      "contract": "vanilla_call",
+      "windows": 6824,
+      "trade_rate": 0.5832356389214537,
+      "buy_share_of_active": 0.6130653266331658,
+      "unconditional_pnl_over_spot": 0.009504781479860388,
+      "active_pnl_over_spot": 0.016296640406675198
+    },
+    {
+      "relative_signal_threshold": 0.005,
+      "spread": 0.05,
+      "contract": "asian_call",
+      "windows": 6824,
+      "trade_rate": 0.384232121922626,
+      "buy_share_of_active": 0.7074752097635393,
+      "unconditional_pnl_over_spot": 0.005867823059920783,
+      "active_pnl_over_spot": 0.015271557803546689
+    },
+    {
+      "relative_signal_threshold": 0.005,
+      "spread": 0.05,
+      "contract": "vanilla_call",
+      "windows": 6824,
+      "trade_rate": 0.5703399765533411,
+      "buy_share_of_active": 0.6004624871531347,
+      "unconditional_pnl_over_spot": 0.011215059040787744,
+      "active_pnl_over_spot": 0.019663813693303073
+    },
+    {
+      "relative_signal_threshold": 0.005,
+      "spread": 0.1,
+      "contract": "asian_call",
+      "windows": 6824,
+      "trade_rate": 0.35199296600234464,
+      "buy_share_of_active": 0.7144046627810158,
+      "unconditional_pnl_over_spot": 0.0055477418659947006,
+      "active_pnl_over_spot": 0.015760945251268876
+    },
+    {
+      "relative_signal_threshold": 0.005,
+      "spread": 0.1,
+      "contract": "vanilla_call",
+      "windows": 6824,
+      "trade_rate": 0.5213950762016413,
+      "buy_share_of_active": 0.6107363687464867,
+      "unconditional_pnl_over_spot": 0.010606303620602527,
+      "active_pnl_over_spot": 0.02034216298678798
+    },
+    {
+      "relative_signal_threshold": 0.005,
+      "spread": 0.2,
+      "contract": "asian_call",
+      "windows": 6824,
+      "trade_rate": 0.28971277842907384,
+      "buy_share_of_active": 0.7491148204350025,
+      "unconditional_pnl_over_spot": 0.004788537112737031,
+      "active_pnl_over_spot": 0.016528567150894034
+    },
+    {
+      "relative_signal_threshold": 0.005,
+      "spread": 0.2,
+      "contract": "vanilla_call",
+      "windows": 6824,
+      "trade_rate": 0.42995310668229775,
+      "buy_share_of_active": 0.6288343558282209,
+      "unconditional_pnl_over_spot": 0.00856220786333052,
+      "active_pnl_over_spot": 0.01991428304681918
+    },
+    {
+      "relative_signal_threshold": 0.0075,
+      "spread": 0.05,
+      "contract": "asian_call",
+      "windows": 6824,
+      "trade_rate": 0.23373388042203985,
+      "buy_share_of_active": 0.7322884012539185,
+      "unconditional_pnl_over_spot": 0.004888650071558831,
+      "active_pnl_over_spot": 0.020915453346907503
+    },
+    {
+      "relative_signal_threshold": 0.0075,
+      "spread": 0.05,
+      "contract": "vanilla_call",
+      "windows": 6824,
+      "trade_rate": 0.4308323563892145,
+      "buy_share_of_active": 0.6091836734693877,
+      "unconditional_pnl_over_spot": 0.010277368594190948,
+      "active_pnl_over_spot": 0.023854681390054092
+    },
+    {
+      "relative_signal_threshold": 0.0075,
+      "spread": 0.1,
+      "contract": "asian_call",
+      "windows": 6824,
+      "trade_rate": 0.21145955451348183,
+      "buy_share_of_active": 0.753984753984754,
+      "unconditional_pnl_over_spot": 0.004492061615848063,
+      "active_pnl_over_spot": 0.021243124370441572
+    },
+    {
+      "relative_signal_threshold": 0.0075,
+      "spread": 0.1,
+      "contract": "vanilla_call",
+      "windows": 6824,
+      "trade_rate": 0.38599062133645956,
+      "buy_share_of_active": 0.6207289293849658,
+      "unconditional_pnl_over_spot": 0.009268901717136664,
+      "active_pnl_over_spot": 0.024013282201116395
+    },
+    {
+      "relative_signal_threshold": 0.0075,
+      "spread": 0.2,
+      "contract": "asian_call",
+      "windows": 6824,
+      "trade_rate": 0.17101406799531066,
+      "buy_share_of_active": 0.7883461868037703,
+      "unconditional_pnl_over_spot": 0.003715580944605316,
+      "active_pnl_over_spot": 0.021726756097674955
+    },
+    {
+      "relative_signal_threshold": 0.0075,
+      "spread": 0.2,
+      "contract": "vanilla_call",
+      "windows": 6824,
+      "trade_rate": 0.31374560375146543,
+      "buy_share_of_active": 0.6515646893974778,
+      "unconditional_pnl_over_spot": 0.007684976856788615,
+      "active_pnl_over_spot": 0.024494293353911963
+    },
+    {
+      "relative_signal_threshold": 0.01,
+      "spread": 0.05,
+      "contract": "asian_call",
+      "windows": 6824,
+      "trade_rate": 0.15020515826494724,
+      "buy_share_of_active": 0.784390243902439,
+      "unconditional_pnl_over_spot": 0.003761701371893777,
+      "active_pnl_over_spot": 0.025043756255417694
+    },
+    {
+      "relative_signal_threshold": 0.01,
+      "spread": 0.05,
+      "contract": "vanilla_call",
+      "windows": 6824,
+      "trade_rate": 0.3199003516998828,
+      "buy_share_of_active": 0.6326156665139716,
+      "unconditional_pnl_over_spot": 0.008914323620007204,
+      "active_pnl_over_spot": 0.027865938791996864
+    },
+    {
+      "relative_signal_threshold": 0.01,
+      "spread": 0.1,
+      "contract": "asian_call",
+      "windows": 6824,
+      "trade_rate": 0.13188745603751464,
+      "buy_share_of_active": 0.8,
+      "unconditional_pnl_over_spot": 0.0033754728830297396,
+      "active_pnl_over_spot": 0.0255935855042166
+    },
+    {
+      "relative_signal_threshold": 0.01,
+      "spread": 0.1,
+      "contract": "vanilla_call",
+      "windows": 6824,
+      "trade_rate": 0.289126611957796,
+      "buy_share_of_active": 0.6457171819564116,
+      "unconditional_pnl_over_spot": 0.008158146687467739,
+      "active_pnl_over_spot": 0.028216519511038957
+    },
+    {
+      "relative_signal_threshold": 0.01,
+      "spread": 0.2,
+      "contract": "asian_call",
+      "windows": 6824,
+      "trade_rate": 0.10477725674091443,
+      "buy_share_of_active": 0.8503496503496504,
+      "unconditional_pnl_over_spot": 0.0028114931118889746,
+      "active_pnl_over_spot": 0.026833047546196306
+    },
+    {
+      "relative_signal_threshold": 0.01,
+      "spread": 0.2,
+      "contract": "vanilla_call",
+      "windows": 6824,
+      "trade_rate": 0.22933763188745604,
+      "buy_share_of_active": 0.678594249201278,
+      "unconditional_pnl_over_spot": 0.006581832633099103,
+      "active_pnl_over_spot": 0.028699313666625096
+    },
+    {
+      "relative_signal_threshold": 0.0125,
+      "spread": 0.05,
+      "contract": "asian_call",
+      "windows": 6824,
+      "trade_rate": 0.09495896834701055,
+      "buy_share_of_active": 0.8379629629629629,
+      "unconditional_pnl_over_spot": 0.0029272061669721548,
+      "active_pnl_over_spot": 0.030826010622558613
+    },
+    {
+      "relative_signal_threshold": 0.0125,
+      "spread": 0.05,
+      "contract": "vanilla_call",
+      "windows": 6824,
+      "trade_rate": 0.24340562719812428,
+      "buy_share_of_active": 0.6514148103552077,
+      "unconditional_pnl_over_spot": 0.007663803184699745,
+      "active_pnl_over_spot": 0.03148572723202352
+    },
+    {
+      "relative_signal_threshold": 0.0125,
+      "spread": 0.1,
+      "contract": "asian_call",
+      "windows": 6824,
+      "trade_rate": 0.08440797186400938,
+      "buy_share_of_active": 0.8489583333333334,
+      "unconditional_pnl_over_spot": 0.002504577926158956,
+      "active_pnl_over_spot": 0.029672291264077628
+    },
+    {
+      "relative_signal_threshold": 0.0125,
+      "spread": 0.1,
+      "contract": "vanilla_call",
+      "windows": 6824,
+      "trade_rate": 0.21893317702227433,
+      "buy_share_of_active": 0.6720214190093708,
+      "unconditional_pnl_over_spot": 0.0070442113991372,
+      "active_pnl_over_spot": 0.032175166390704314
+    },
+    {
+      "relative_signal_threshold": 0.0125,
+      "spread": 0.2,
+      "contract": "asian_call",
+      "windows": 6824,
+      "trade_rate": 0.06521101992966002,
+      "buy_share_of_active": 0.8831460674157303,
+      "unconditional_pnl_over_spot": 0.0018959143044681998,
+      "active_pnl_over_spot": 0.029073526322901118
+    },
+    {
+      "relative_signal_threshold": 0.0125,
+      "spread": 0.2,
+      "contract": "vanilla_call",
+      "windows": 6824,
+      "trade_rate": 0.1735052754982415,
+      "buy_share_of_active": 0.7035472972972973,
+      "unconditional_pnl_over_spot": 0.0056040736033099395,
+      "active_pnl_over_spot": 0.0322991539434012
+    },
+    {
+      "relative_signal_threshold": 0.015,
+      "spread": 0.05,
+      "contract": "asian_call",
+      "windows": 6824,
+      "trade_rate": 0.06052168815943728,
+      "buy_share_of_active": 0.8668280871670703,
+      "unconditional_pnl_over_spot": 0.0019893121390860804,
+      "active_pnl_over_spot": 0.03286940929085572
+    },
+    {
+      "relative_signal_threshold": 0.015,
+      "spread": 0.05,
+      "contract": "vanilla_call",
+      "windows": 6824,
+      "trade_rate": 0.18640093786635403,
+      "buy_share_of_active": 0.6831761006289309,
+      "unconditional_pnl_over_spot": 0.006598596893594071,
+      "active_pnl_over_spot": 0.03540001981280341
+    },
+    {
+      "relative_signal_threshold": 0.015,
+      "spread": 0.1,
+      "contract": "asian_call",
+      "windows": 6824,
+      "trade_rate": 0.0526084407971864,
+      "buy_share_of_active": 0.8941504178272981,
+      "unconditional_pnl_over_spot": 0.0017565929793525764,
+      "active_pnl_over_spot": 0.03338994565766568
+    },
+    {
+      "relative_signal_threshold": 0.015,
+      "spread": 0.1,
+      "contract": "vanilla_call",
+      "windows": 6824,
+      "trade_rate": 0.16588511137162953,
+      "buy_share_of_active": 0.6969964664310954,
+      "unconditional_pnl_over_spot": 0.005849481603663268,
+      "active_pnl_over_spot": 0.03526224599240119
+    },
+    {
+      "relative_signal_threshold": 0.015,
+      "spread": 0.2,
+      "contract": "asian_call",
+      "windows": 6824,
+      "trade_rate": 0.04381594372801876,
+      "buy_share_of_active": 0.919732441471572,
+      "unconditional_pnl_over_spot": 0.001327018245611749,
+      "active_pnl_over_spot": 0.03028619567911229
+    },
+    {
+      "relative_signal_threshold": 0.015,
+      "spread": 0.2,
+      "contract": "vanilla_call",
+      "windows": 6824,
+      "trade_rate": 0.13232708089097303,
+      "buy_share_of_active": 0.7297895902547066,
+      "unconditional_pnl_over_spot": 0.005034353751933016,
+      "active_pnl_over_spot": 0.03804477298249269
+    },
+    {
+      "relative_signal_threshold": 0.02,
+      "spread": 0.05,
+      "contract": "asian_call",
+      "windows": 6824,
+      "trade_rate": 0.03018757327080891,
+      "buy_share_of_active": 0.9320388349514563,
+      "unconditional_pnl_over_spot": 0.0008816482425432826,
+      "active_pnl_over_spot": 0.02920566799570563
+    },
+    {
+      "relative_signal_threshold": 0.02,
+      "spread": 0.05,
+      "contract": "vanilla_call",
+      "windows": 6824,
+      "trade_rate": 0.11371629542790153,
+      "buy_share_of_active": 0.7435567010309279,
+      "unconditional_pnl_over_spot": 0.005055132253558034,
+      "active_pnl_over_spot": 0.04445389497201034
+    },
+    {
+      "relative_signal_threshold": 0.02,
+      "spread": 0.1,
+      "contract": "asian_call",
+      "windows": 6824,
+      "trade_rate": 0.02828253223915592,
+      "buy_share_of_active": 0.9378238341968912,
+      "unconditional_pnl_over_spot": 0.0007925668135038034,
+      "active_pnl_over_spot": 0.02802319137487023
+    },
+    {
+      "relative_signal_threshold": 0.02,
+      "spread": 0.1,
+      "contract": "vanilla_call",
+      "windows": 6824,
+      "trade_rate": 0.10287221570926143,
+      "buy_share_of_active": 0.7592592592592593,
+      "unconditional_pnl_over_spot": 0.004696925712881159,
+      "active_pnl_over_spot": 0.04565786476453138
+    },
+    {
+      "relative_signal_threshold": 0.02,
+      "spread": 0.2,
+      "contract": "asian_call",
+      "windows": 6824,
+      "trade_rate": 0.023007033997655333,
+      "buy_share_of_active": 0.9554140127388535,
+      "unconditional_pnl_over_spot": 0.0006056663225060038,
+      "active_pnl_over_spot": 0.02632526741898707
+    },
+    {
+      "relative_signal_threshold": 0.02,
+      "spread": 0.2,
+      "contract": "vanilla_call",
+      "windows": 6824,
+      "trade_rate": 0.0805978898007034,
+      "buy_share_of_active": 0.8145454545454546,
+      "unconditional_pnl_over_spot": 0.0037321338113742385,
+      "active_pnl_over_spot": 0.04630560205239601
+    }
+  ]
+}

@@ -1,0 +1,97 @@
+{
+  "protocol": {
+    "p_paths": 40,
+    "q_paths": 256,
+    "alignment": "unique window key",
+    "p_stability_subsets": [
+      8,
+      16,
+      32
+    ]
+  },
+  "contracts": {
+    "accumulator": {
+      "windows": 6824,
+      "p": {
+        "mean_payoff": 0.11011852324008942,
+        "median_payoff": 0.1274021565914154,
+        "p05_payoff": 0.017177969217300415,
+        "p95_payoff": 0.16901445388793945,
+        "expected_shortfall_5pct": 0.009064636193215847,
+        "loss_rate": 5.8616646128939465e-05,
+        "ko_rate": 0.45823565125465393,
+        "leveraged_fixing_share_rate": 0.0003646751574706286
+      },
+      "q": {
+        "mean_payoff": 0.09804533421993256,
+        "median_payoff": 0.11029789596796036,
+        "p05_payoff": 0.012286609970033169,
+        "p95_payoff": 0.1635747104883194,
+        "expected_shortfall_5pct": -0.008906356990337372,
+        "loss_rate": 0.0101794907823205,
+        "ko_rate": 0.4349527060985565,
+        "leveraged_fixing_share_rate": 0.013146331533789635
+      },
+      "realized": {
+        "mean_payoff": 0.09334009140729904,
+        "median_payoff": 0.09949526190757751,
+        "p05_payoff": 0.011284478940069675,
+        "p95_payoff": 0.16524533927440643,
+        "expected_shortfall_5pct": 0.006037730257958174,
+        "loss_rate": 0.00014654161350335926,
+        "ko_rate": 0.52711021900177,
+        "leveraged_fixing_share_rate": 0.006873238831758499
+      },
+      "mean_p_q_gap": 0.012073195418041383,
+      "p_window_es5": 0.05425889232724046,
+      "q_window_es5": 0.03782283201483711,
+      "p_path_count_stability": {
+        "mean_abs_8_vs_32": 0.010193148485215736,
+        "mean_abs_16_vs_32": 0.005721663177575017
+      }
+    },
+    "snowball": {
+      "windows": 6824,
+      "p": {
+        "mean_payoff": 0.024500522762537003,
+        "median_payoff": 0.013095238246023655,
+        "p05_payoff": 0.0059523810632526875,
+        "p95_payoff": 0.07202380895614624,
+        "expected_shortfall_5pct": 0.003697820706292987,
+        "loss_rate": 0.0003590269770938903,
+        "ko_rate": 0.42404747009277344,
+        "ki_rate": 0.0003700175730045885,
+        "coupon_rate": 0.9996410012245178
+      },
+      "q": {
+        "mean_payoff": 0.018617453053593636,
+        "median_payoff": 0.013095238246023655,
+        "p05_payoff": 0.0029761905316263437,
+        "p95_payoff": 0.07202380895614624,
+        "expected_shortfall_5pct": -0.09964726865291595,
+        "loss_rate": 0.0246109776198864,
+        "ko_rate": 0.3908562660217285,
+        "ki_rate": 0.03293580189347267,
+        "coupon_rate": 0.9751789569854736
+      },
+      "realized": {
+        "mean_payoff": 0.019361739978194237,
+        "median_payoff": 0.013095238246023655,
+        "p05_payoff": 0.0029761905316263437,
+        "p95_payoff": 0.0535714291036129,
+        "expected_shortfall_5pct": -0.02494191750884056,
+        "loss_rate": 0.01494724489748478,
+        "ko_rate": 0.4967760741710663,
+        "ki_rate": 0.019636576995253563,
+        "coupon_rate": 0.9849061965942383
+      },
+      "mean_p_q_gap": 0.005883064624833289,
+      "p_window_es5": 0.009359564742802563,
+      "q_window_es5": 0.0009208413288831243,
+      "p_path_count_stability": {
+        "mean_abs_8_vs_32": 0.002768529507053509,
+        "mean_abs_16_vs_32": 0.0015698975678346775
+      }
+    }
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "frozen_protocol": {
+    "windows": 6824,
+    "p_paths": 40,
+    "q_paths": 256,
+    "sampling_steps": 50,
+    "primary_spread": 0.05,
+    "materiality_threshold_over_spot": 0.01
+  },
+  "sources": {
+    "path_quality": {
+      "file": "path_quality_frozen_ema12000.json",
+      "sha256": "e7fa0fa0d2894e15daa423d4d23ff947c8f0842612a6589e449fcc35ed148e66"
+    },
+    "economic": {
+      "file": "economic_40path_summary.json",
+      "sha256": "2b10d690f4d40d99ea84f4c5290fe39469dd0df0948cf343f6fdec29228e875b"
+    },
+    "delta_hedge": {
+      "file": "delta_hedge_40path_summary.json",
+      "sha256": "e85e8c0d09fb3b43216238d6c924b9d129f294e0d575795e274ccc8e48d2cabc"
+    },
+    "structured": {
+      "file": "structured_product_40path_summary.json",
+      "sha256": "eaa6e972c7de205861c7488d9e330316999f05ce06c1d876c1c8d9307f044067"
+    },
+    "calibration": {
+      "file": "calibration_sharpness_40paths.json",
+      "sha256": "b4083026ba136f447846479573cb21a16be15445b5bc4f0e440a5fe2f1b31bf9"
+    },
+    "effective_tails": {
+      "file": "effective_tail_behavior.json",
+      "sha256": "2d0e74052b74e5ac6deabc1f35d5fd4f84d286b7049ba992825b74d7dbe67f3a"
+    },
+    "quote_uncertainty": {
+      "file": "quote_mc_threshold_sensitivity.csv",
+      "sha256": "67de3d22a6597f3f276e679ca473b0fd1e64af3f6395a7cdd8cf17e0f3c93e37"
+    }
+  },
+  "headline": {
+    "terminal_crps": 0.0485,
+    "energy_score": 0.3368,
+    "coverage_90": 0.704,
+    "volatility_ratio": 0.882,
+    "vanilla_unconditional_pnl_over_spot": 0.009129748200742385,
+    "asian_unconditional_pnl_over_spot": 0.0035601076669720426,
+    "lookback_unconditional_pnl_over_spot": 0.0028146151622262913,
+    "vanilla_delta_hedged_pnl_over_spot": 0.0033004654795606462,
+    "asian_delta_hedged_pnl_over_spot": -0.0003626380993136613
+  }
+}

@@ -1,0 +1,36 @@
+# Python and notebooks
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Local environments and IDE files
+.venv/
+venv/
+.env
+.idea/
+.vscode/
+
+# Large, local-only research artifacts
+data/raw/
+data/processed/
+release_assets/
+artifacts/*
+!artifacts/README.md
+!artifacts/ARCHIVE_MANIFEST.json
+*.pt
+*.pth
+*.ckpt
+*.npy
+*.npz
+*.pkl
+*.joblib
+
+# Generated paper files
+paper/*.aux
+paper/*.bbl
+paper/*.blg
+paper/*.log
+paper/*.out
+paper/*.synctex.gz
+Results/

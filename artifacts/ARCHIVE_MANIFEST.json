@@ -1,0 +1,156 @@
+﻿{
+    "schema_version":  1,
+    "protocol":  {
+                     "p_paths_per_window":  40,
+                     "q_paths_per_window":  256,
+                     "windows":  6824,
+                     "alignment_key":  [
+                                           "asset_underlying",
+                                           "start_date",
+                                           "start_price",
+                                           "actual_trading_days",
+                                           "risk_free_rate"
+                                       ]
+                 },
+    "p_archive":  {
+                      "release_name":  "dlpm_ema12000_test_40paths.npy",
+                      "bytes":  275143808,
+                      "sha256":  "7f44d27e0711f8f4ac39e113a150a426edf2312d1e6639874f8bf0fd7a44a974"
+                  },
+    "rnq_archive":  {
+                        "release_name":  "rnq_unitvar_cap8",
+                        "files":  [
+                                      {
+                                          "file":  "rnq_unitvar_cap8/CSI1000/garch_params_deduplicated.json",
+                                          "bytes":  200,
+                                          "sha256":  "64d61bc58726d35553d1c631edb74d3c14ba7a7fcc07d984ec59024b5b83b279"
+                                      },
+                                      {
+                                          "file":  "rnq_unitvar_cap8/CSI1000/garch_risk_neutral_meta_20260728_dedup_unitvar_cap8.json",
+                                          "bytes":  581,
+                                          "sha256":  "0b3d3f46876b4e1d15c542ef1528beae25e77220867850a22be792358be06b97"
+                                      },
+                                      {
+                                          "file":  "rnq_unitvar_cap8/CSI1000/garch_risk_neutral_paths_20260728_dedup_unitvar_cap8_samples.npy",
+                                          "bytes":  214252672,
+                                          "sha256":  "0ce31b8c75ccd59d8f1f56a82271fcdd0c7ce12ce75af1c33d07ba76b0abdc11"
+                                      },
+                                      {
+                                          "file":  "rnq_unitvar_cap8/CSI300/garch_params_deduplicated.json",
+                                          "bytes":  198,
+                                          "sha256":  "07fa5c115c4ce0dd55b545d4f7e97d2ec1a923e118d9a137f8388713c5b18e0c"
+                                      },
+                                      {
+                                          "file":  "rnq_unitvar_cap8/CSI300/garch_risk_neutral_meta_20260728_dedup_unitvar_cap8.json",
+                                          "bytes":  578,
+                                          "sha256":  "6a091416e4987b2820b4507d690095b822af2c6dafee2d76e5d028b12069dc60"
+                                      },
+                                      {
+                                          "file":  "rnq_unitvar_cap8/CSI300/garch_risk_neutral_paths_20260728_dedup_unitvar_cap8_samples.npy",
+                                          "bytes":  214252672,
+                                          "sha256":  "a5a89bde9931482bffbcd7250df3b1ef08628e7eadae3c4dc36365508728f5da"
+                                      },
+                                      {
+                                          "file":  "rnq_unitvar_cap8/CSI500/garch_params_deduplicated.json",
+                                          "bytes":  198,
+                                          "sha256":  "1c7142144217f5ef67dcc7831d9c31787f63b216b5f530ae02cfa478a35a7b76"
+                                      },
+                                      {
+                                          "file":  "rnq_unitvar_cap8/CSI500/garch_risk_neutral_meta_20260728_dedup_unitvar_cap8.json",
+                                          "bytes":  577,
+                                          "sha256":  "e89ee44a37806785d6c2c1a4e2668b799111159ac176cbecea88ebb1e2e0a2d0"
+                                      },
+                                      {
+                                          "file":  "rnq_unitvar_cap8/CSI500/garch_risk_neutral_paths_20260728_dedup_unitvar_cap8_samples.npy",
+                                          "bytes":  214252672,
+                                          "sha256":  "04eb592dff3b8ee16c74f3b8241674bcbc7bbb2c4566417e848ff2c6c0ed4efe"
+                                      },
+                                      {
+                                          "file":  "rnq_unitvar_cap8/Dow_Jones/garch_params_deduplicated.json",
+                                          "bytes":  198,
+                                          "sha256":  "418223b7756d7ad5a70d247220681cb91c3c890b636c2534ad86b06080e1c719"
+                                      },
+                                      {
+                                          "file":  "rnq_unitvar_cap8/Dow_Jones/garch_risk_neutral_meta_20260728_dedup_unitvar_cap8.json",
+                                          "bytes":  581,
+                                          "sha256":  "6f192026a42ebea8bfc79c9ed882b7e5dc38bf1153d9ba73bab6f76d140f6c0c"
+                                      },
+                                      {
+                                          "file":  "rnq_unitvar_cap8/Dow_Jones/garch_risk_neutral_paths_20260728_dedup_unitvar_cap8_samples.npy",
+                                          "bytes":  227724416,
+                                          "sha256":  "e84785556a0760073f2f5f7a43790bf1aa69820f625a18ef632288a2c65acdcc"
+                                      },
+                                      {
+                                          "file":  "rnq_unitvar_cap8/NASDAQ/garch_params_deduplicated.json",
+                                          "bytes":  197,
+                                          "sha256":  "d624596ac458a5bd2e79e2d989dc0c8d37f1f18cc9a3a0889d00645cfb23b4f8"
+                                      },
+                                      {
+                                          "file":  "rnq_unitvar_cap8/NASDAQ/garch_risk_neutral_meta_20260728_dedup_unitvar_cap8.json",
+                                          "bytes":  575,
+                                          "sha256":  "ceb47a79d94612f96ab38c2c00ea087beb1350ee1cbf4120ea368ba3fd106173"
+                                      },
+                                      {
+                                          "file":  "rnq_unitvar_cap8/NASDAQ/garch_risk_neutral_paths_20260728_dedup_unitvar_cap8_samples.npy",
+                                          "bytes":  227724416,
+                                          "sha256":  "633367f36f3322cb91d60e4db60e842b94aba5ea6359f79742d115d378b1026b"
+                                      },
+                                      {
+                                          "file":  "rnq_unitvar_cap8/Russell_2000/garch_params_deduplicated.json",
+                                          "bytes":  198,
+                                          "sha256":  "8b8b20dd0b54060f8d26b987d2093a760835b0b3dc6fdd3ac01f92226eb3a211"
+                                      },
+                                      {
+                                          "file":  "rnq_unitvar_cap8/Russell_2000/garch_risk_neutral_meta_20260728_dedup_unitvar_cap8.json",
+                                          "bytes":  582,
+                                          "sha256":  "abc8d567189fe4106db68488694bad9a0823497970a6a849b19792fea2f5cedc"
+                                      },
+                                      {
+                                          "file":  "rnq_unitvar_cap8/Russell_2000/garch_risk_neutral_paths_20260728_dedup_unitvar_cap8_samples.npy",
+                                          "bytes":  227724416,
+                                          "sha256":  "0f7cef05cac602732f3c4b2f7bbfe9c90cf07853d2c92ccda69c7d75d0f0a4c4"
+                                      },
+                                      {
+                                          "file":  "rnq_unitvar_cap8/SP500/garch_params_deduplicated.json",
+                                          "bytes":  199,
+                                          "sha256":  "b59cd0f07504d241aa0b17b813a622265fd5e20e24e533d1b4eefe5991320e77"
+                                      },
+                                      {
+                                          "file":  "rnq_unitvar_cap8/SP500/garch_risk_neutral_meta_20260728_dedup_unitvar_cap8.json",
+                                          "bytes":  577,
+                                          "sha256":  "8c0f38449c8c819f41e2f6de65670424e0d6c90586a66e77a8042f71a77828b0"
+                                      },
+                                      {
+                                          "file":  "rnq_unitvar_cap8/SP500/garch_risk_neutral_paths_20260728_dedup_unitvar_cap8_samples.npy",
+                                          "bytes":  227724416,
+                                          "sha256":  "c50c5064ca7d1be49d128a189acb1e9ec19222e4b829b3425ca42aa1a4ba3c81"
+                                      },
+                                      {
+                                          "file":  "rnq_unitvar_cap8/SSE_Composite/garch_params_deduplicated.json",
+                                          "bytes":  199,
+                                          "sha256":  "7f396eab457175e9a7f19afe722e78f4fd120d29be296ca9a6c0140d6c67431f"
+                                      },
+                                      {
+                                          "file":  "rnq_unitvar_cap8/SSE_Composite/garch_risk_neutral_meta_20260728_dedup_unitvar_cap8.json",
+                                          "bytes":  583,
+                                          "sha256":  "c9dee5ba475e45bb0fb807fbae3ea888a581cb47f3f5da68352608c5c2316159"
+                                      },
+                                      {
+                                          "file":  "rnq_unitvar_cap8/SSE_Composite/garch_risk_neutral_paths_20260728_dedup_unitvar_cap8_samples.npy",
+                                          "bytes":  214252672,
+                                          "sha256":  "ececd21e7f5449bb3a60c7f8c81485b80d8e46085870b145a732af018d3c69b3"
+                                      }
+                                  ]
+                    },
+    "source_test_table":  {
+                              "release_name":  "testing_data_merged.csv",
+                              "bytes":  6194764,
+                              "sha256":  "c93b4cb9d4bc8f72792a51d7481a302189c37258918913248721d93abd1441b4",
+                              "role":  "RN-Q generation row order used only for unique-key alignment"
+                          },
+    "heldout_test_table":  {
+                               "release_name":  "clean_test_history_context.csv",
+                               "bytes":  62901078,
+                               "sha256":  "68b964021fc1d9f899364e41eaa871a072f19e1aa8a670faa68dc3d64685b8d8"
+                           }
+}

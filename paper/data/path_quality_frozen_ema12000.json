@@ -1,0 +1,14 @@
+{
+  "scope": "6,824 chronological held-out windows; EMA-12000 DLPM is the frozen reported model",
+  "metrics": ["terminal_crps", "energy_score", "coverage_90", "volatility_ratio", "tail_error"],
+  "models": {
+    "history_aware_dlpm": {"terminal_crps": 0.0485, "energy_score": 0.3368, "coverage_90": 0.704, "volatility_ratio": 0.882, "tail_error": 0.0075},
+    "contract_only_dlpm": {"terminal_crps": 0.0548, "energy_score": 0.3626, "coverage_90": 0.735, "volatility_ratio": 0.767, "tail_error": 0.0091},
+    "gaussian_ddpm_simple": {"terminal_crps": 0.0831, "energy_score": 0.5461, "coverage_90": 0.226, "volatility_ratio": 0.154, "tail_error": 0.0124},
+    "gaussian_ddpm_finance_aware": {"terminal_crps": 0.1521, "energy_score": 0.9153, "coverage_90": 0.234, "volatility_ratio": 0.762, "tail_error": 0.0100},
+    "historical_block_bootstrap": {"terminal_crps": 0.0486, "energy_score": 0.3297, "coverage_90": 0.864, "volatility_ratio": 1.139, "tail_error": 0.0066},
+    "historical_drift_gbm": {"terminal_crps": 0.0498, "energy_score": 0.3397, "coverage_90": 0.897, "volatility_ratio": 1.246, "tail_error": 0.0102},
+    "conditional_neural_sde": {"terminal_crps": 0.0579, "energy_score": 0.3774, "coverage_90": 0.794, "volatility_ratio": 1.537, "tail_error": 0.0105},
+    "chronos_t5_zero_shot": {"terminal_crps": 0.0542, "energy_score": 0.3668, "coverage_90": 0.766, "volatility_ratio": 1.060, "tail_error": 0.0093}
+  }
+}

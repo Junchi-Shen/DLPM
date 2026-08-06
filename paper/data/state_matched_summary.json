@@ -1,0 +1,182 @@
+{
+  "protocol": "40 nearest training windows within the same index and contractual tenor, using standardized pre-window 60-day volatility, trend, and current drawdown.",
+  "overall": {
+    "windows": 6824,
+    "dlpm_crps": 0.04851167005555587,
+    "state_matched_crps": 0.06328664252503552
+  },
+  "groups": {
+    "trend_state": {
+      "high": {
+        "windows": 2274,
+        "dlpm_crps": 0.036388323991762936,
+        "state_matched_crps": 0.05379894868881718,
+        "dlpm_minus_baseline": -0.017410624697054244
+      },
+      "low": {
+        "windows": 2270,
+        "dlpm_crps": 0.06463793044022904,
+        "state_matched_crps": 0.0836839717231991,
+        "dlpm_minus_baseline": -0.019046041282970053
+      },
+      "middle": {
+        "windows": 2280,
+        "dlpm_crps": 0.04454758140461595,
+        "state_matched_crps": 0.052441501517899204,
+        "dlpm_minus_baseline": -0.007893920113283258
+      }
+    },
+    "drawdown_state": {
+      "deep": {
+        "windows": 2276,
+        "dlpm_crps": 0.060444906881451536,
+        "state_matched_crps": 0.0782602695490322,
+        "dlpm_minus_baseline": -0.017815362667580673
+      },
+      "middle": {
+        "windows": 2274,
+        "dlpm_crps": 0.04316413883847239,
+        "state_matched_crps": 0.05667307475833517,
+        "dlpm_minus_baseline": -0.01350893591986278
+      },
+      "shallow": {
+        "windows": 2274,
+        "dlpm_crps": 0.04191546907574464,
+        "state_matched_crps": 0.054913413850831545,
+        "dlpm_minus_baseline": -0.012997944775086909
+      }
+    },
+    "asset": {
+      "CSI1000": {
+        "windows": 827,
+        "dlpm_crps": 0.08592627186314294,
+        "state_matched_crps": 0.11202553836046218,
+        "dlpm_minus_baseline": -0.02609926649731924
+      },
+      "CSI300": {
+        "windows": 827,
+        "dlpm_crps": 0.049187725569736,
+        "state_matched_crps": 0.0730019874801644,
+        "dlpm_minus_baseline": -0.02381426191042841
+      },
+      "CSI500": {
+        "windows": 827,
+        "dlpm_crps": 0.06936834358524106,
+        "state_matched_crps": 0.08940499052168127,
+        "dlpm_minus_baseline": -0.020036646936440205
+      },
+      "Dow_Jones": {
+        "windows": 879,
+        "dlpm_crps": 0.02671558662310711,
+        "state_matched_crps": 0.033026165953695244,
+        "dlpm_minus_baseline": -0.006310579330588138
+      },
+      "NASDAQ": {
+        "windows": 879,
+        "dlpm_crps": 0.04397490400995505,
+        "state_matched_crps": 0.043114806375690706,
+        "dlpm_minus_baseline": 0.0008600976342643439
+      },
+      "Russell_2000": {
+        "windows": 879,
+        "dlpm_crps": 0.041929279661163776,
+        "state_matched_crps": 0.07225988863474846,
+        "dlpm_minus_baseline": -0.030330608973584694
+      },
+      "SP500": {
+        "windows": 879,
+        "dlpm_crps": 0.03232631493790758,
+        "state_matched_crps": 0.031342094582104296,
+        "dlpm_minus_baseline": 0.0009842203558032897
+      },
+      "SSE_Composite": {
+        "windows": 827,
+        "dlpm_crps": 0.04175227511255454,
+        "state_matched_crps": 0.05673313135921401,
+        "dlpm_minus_baseline": -0.014980856246659471
+      }
+    },
+    "tenor": {
+      "30": {
+        "windows": 2796,
+        "dlpm_crps": 0.03329670160688039,
+        "state_matched_crps": 0.03516013320550286,
+        "dlpm_minus_baseline": -0.001863431598622477
+      },
+      "90": {
+        "windows": 2316,
+        "dlpm_crps": 0.05610966520547718,
+        "state_matched_crps": 0.0718103799585673,
+        "dlpm_minus_baseline": -0.015700714753090133
+      },
+      "180": {
+        "windows": 1596,
+        "dlpm_crps": 0.06264073014445333,
+        "state_matched_crps": 0.09892381608653611,
+        "dlpm_minus_baseline": -0.03628308594208277
+      },
+      "365": {
+        "windows": 116,
+        "dlpm_crps": 0.0691505934469222,
+        "state_matched_crps": 0.08073332491468013,
+        "dlpm_minus_baseline": -0.011582731467757887
+      }
+    },
+    "country": {
+      "China": {
+        "windows": 3308,
+        "dlpm_crps": 0.061558654032668636,
+        "state_matched_crps": 0.08279141193038046,
+        "dlpm_minus_baseline": -0.021232757897711833
+      },
+      "USA": {
+        "windows": 3516,
+        "dlpm_crps": 0.03623652130803338,
+        "state_matched_crps": 0.04493573888655968,
+        "dlpm_minus_baseline": -0.008699217578526298
+      }
+    }
+  },
+  "calendar_block_inference": [
+    {
+      "block_days": 20,
+      "effective_blocks": 27,
+      "mean_difference_dlpm_minus_baseline": -0.01477497246947966,
+      "ci95_low": -0.01760099740522432,
+      "ci95_high": -0.007274881271139024,
+      "p_value_two_sided": 0.0
+    },
+    {
+      "block_days": 60,
+      "effective_blocks": 9,
+      "mean_difference_dlpm_minus_baseline": -0.01477497246947966,
+      "ci95_low": -0.018776958984015896,
+      "ci95_high": -0.004749140239212397,
+      "p_value_two_sided": 0.0
+    },
+    {
+      "block_days": 90,
+      "effective_blocks": 6,
+      "mean_difference_dlpm_minus_baseline": -0.01477497246947966,
+      "ci95_low": -0.021110267734606888,
+      "ci95_high": -0.002392295188150449,
+      "p_value_two_sided": 0.0
+    },
+    {
+      "block_days": 120,
+      "effective_blocks": 5,
+      "mean_difference_dlpm_minus_baseline": -0.01477497246947966,
+      "ci95_low": -0.01927931277825798,
+      "ci95_high": -0.003197744289352039,
+      "p_value_two_sided": 0.0005
+    },
+    {
+      "block_days": 150,
+      "effective_blocks": 4,
+      "mean_difference_dlpm_minus_baseline": -0.01477497246947966,
+      "ci95_low": -0.017590254589295494,
+      "ci95_high": -0.003442986356877364,
+      "p_value_two_sided": 0.0
+    }
+  ]
+}

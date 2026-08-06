@@ -1,0 +1,44 @@
+{
+  "selection_split": "validation",
+  "fixed_seed": 20260729,
+  "protocols": [
+    {
+      "name": "legacy_dlim",
+      "sampler": "dlim",
+      "sampling_steps": 50,
+      "eta": 1.0,
+      "auxiliary_cap": 100.0,
+      "x0_clip": 1.35
+    },
+    {
+      "name": "native_skip_cap100",
+      "sampler": "native_skip",
+      "sampling_steps": 50,
+      "eta": 1.0,
+      "auxiliary_cap": 100.0,
+      "x0_clip": 1.35
+    },
+    {
+      "name": "native_skip_cap1p5",
+      "sampler": "native_skip",
+      "sampling_steps": 50,
+      "eta": 1.0,
+      "auxiliary_cap": 1.5,
+      "x0_clip": 1.35
+    },
+    {
+      "name": "ancestral_full_chain",
+      "sampler": "ancestral",
+      "sampling_steps": 1000,
+      "eta": 1.0,
+      "auxiliary_cap": 100.0,
+      "x0_clip": 1.35
+    }
+  ],
+  "selection_score": {
+    "path_coverage_target": 0.9,
+    "volatility_log_weight": 0.75,
+    "absolute_acf_weight": 0.5,
+    "terminal_median_error_weight": 0.25
+  }
+}

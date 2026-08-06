@@ -1,0 +1,145 @@
+{
+  "protocol": "tau_S=0.01 initial-spot threshold; g=0.05; joint calendar blocks",
+  "contracts": {
+    "asian_call": {
+      "windows": 6824,
+      "trade_rate": 0.15020515826494724,
+      "win_rate_active": 0.5941463414634146,
+      "buy_share_active": 0.784390243902439,
+      "buy_unconditional": 0.003526074820498468,
+      "sell_share_active": 0.21560975609756097,
+      "sell_unconditional": 0.00023562655139530917,
+      "unhedged_unconditional": 0.003761701371893776,
+      "hedged_unconditional": -0.0004115338927640449,
+      "hedged_win_rate_active": 0.4848780487804878,
+      "bootstrap": {
+        "20": {
+          "unconditional_mean": 0.0037764471196549214,
+          "unconditional_q025": 0.0008358067441531732,
+          "unconditional_q975": 0.007343077326193429,
+          "active_mean": 0.025136025119124883,
+          "active_q025": 0.0058772390092656675,
+          "active_q975": 0.04729906251428776
+        },
+        "60": {
+          "unconditional_mean": 0.0036975184757747563,
+          "unconditional_q025": -0.00025000437993714025,
+          "unconditional_q975": 0.007923489597187219,
+          "active_mean": 0.024607768233787367,
+          "active_q025": -0.0017707505130845358,
+          "active_q975": 0.05068806517476831
+        },
+        "90": {
+          "unconditional_mean": 0.003519704551905751,
+          "unconditional_q025": -0.00043672287912757224,
+          "unconditional_q975": 0.009734499369671768,
+          "active_mean": 0.022889897702884923,
+          "active_q025": -0.0031280405949089753,
+          "active_q975": 0.05960240892524717
+        },
+        "120": {
+          "unconditional_mean": 0.0037064164947756975,
+          "unconditional_q025": 0.00033249053667648126,
+          "unconditional_q975": 0.0070200687269718395,
+          "active_mean": 0.02529648838430366,
+          "active_q025": 0.00245339737370919,
+          "active_q975": 0.052944110514764844
+        },
+        "150": {
+          "unconditional_mean": 0.0035308752596155796,
+          "unconditional_q025": 0.00034116973494363167,
+          "unconditional_q975": 0.008355676873271534,
+          "active_mean": 0.02271678004376126,
+          "active_q025": 0.0024584538716533656,
+          "active_q975": 0.04639071800040355
+        },
+        "180": {
+          "unconditional_mean": 0.003681146172815726,
+          "unconditional_q025": 0.0001325909566033804,
+          "unconditional_q975": 0.009515216149317067,
+          "active_mean": 0.024898908805324377,
+          "active_q025": 0.0007759408510952688,
+          "active_q975": 0.05564054645161191
+        },
+        "252": {
+          "unconditional_mean": 0.0035883657711253177,
+          "unconditional_q025": -8.036796439774347e-05,
+          "unconditional_q975": 0.003987550396562667,
+          "active_mean": 0.02551246219117934,
+          "active_q025": -0.0036969263622961997,
+          "active_q975": 0.03409054385360926
+        }
+      }
+    },
+    "vanilla_call": {
+      "windows": 6824,
+      "trade_rate": 0.3199003516998828,
+      "win_rate_active": 0.6023820430600092,
+      "buy_share_active": 0.6326156665139716,
+      "buy_unconditional": 0.00849632348433584,
+      "sell_share_active": 0.3673843334860284,
+      "sell_unconditional": 0.00041800013567136257,
+      "unhedged_unconditional": 0.008914323620007202,
+      "hedged_unconditional": 0.0032794492961767847,
+      "hedged_win_rate_active": 0.603298213467705,
+      "bootstrap": {
+        "20": {
+          "unconditional_mean": 0.00895654958758717,
+          "unconditional_q025": 0.0032189398671350626,
+          "unconditional_q975": 0.015495635365721608,
+          "active_mean": 0.027916393782077463,
+          "active_q025": 0.010205785668573128,
+          "active_q975": 0.04779237538261343
+        },
+        "60": {
+          "unconditional_mean": 0.008779245009785584,
+          "unconditional_q025": 0.000969711174661445,
+          "unconditional_q975": 0.017300020248663287,
+          "active_mean": 0.02729551449642356,
+          "active_q025": 0.0033970662523841915,
+          "active_q975": 0.051457016403816336
+        },
+        "90": {
+          "unconditional_mean": 0.008525588800100405,
+          "unconditional_q025": 0.00011846689323865024,
+          "unconditional_q975": 0.021849841414154053,
+          "active_mean": 0.02615251593349871,
+          "active_q025": 0.0004253989244209223,
+          "active_q975": 0.06471976605222841
+        },
+        "120": {
+          "unconditional_mean": 0.008742656213328915,
+          "unconditional_q025": -0.00019805594591816607,
+          "unconditional_q975": 0.016624206427890056,
+          "active_mean": 0.027264082346212606,
+          "active_q025": -0.0006797536574725597,
+          "active_q975": 0.04722946692705012
+        },
+        "150": {
+          "unconditional_mean": 0.008393489335309283,
+          "unconditional_q025": 3.622319447198862e-05,
+          "unconditional_q975": 0.020845869825000096,
+          "active_mean": 0.025696024422216086,
+          "active_q025": 0.00012063320727827504,
+          "active_q975": 0.060785855708193566
+        },
+        "180": {
+          "unconditional_mean": 0.008700098716260736,
+          "unconditional_q025": 0.0010944481742211035,
+          "unconditional_q975": 0.020772447271436376,
+          "active_mean": 0.027018456980088586,
+          "active_q025": 0.005219871335189804,
+          "active_q975": 0.05787878470502785
+        },
+        "252": {
+          "unconditional_mean": 0.008396956383010008,
+          "unconditional_q025": 0.0007257114043060468,
+          "unconditional_q975": 0.01040992019680137,
+          "active_mean": 0.026645911983339102,
+          "active_q025": 0.0055637874330130245,
+          "active_q975": 0.029518156461010886
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,162 @@
+# Model/Diffusion_Model/condition_network.py
+
+import torch
+import torch.nn as nn
+import numpy as np # Might be needed if adding type hints or defaults
+
+class EnhancedConditionNetwork(nn.Module):
+    """
+    增强条件网络 - 让国家ID和指数ID的权重显著大于其他5个条件
+    (代码与你提供的一致)
+    """
+    
+    def __init__(self, 
+                 num_countries=10,      # Default value, should be overridden
+                 num_indices=50,       # Default value, should be overridden
+                 country_emb_dim=64,     
+                 index_emb_dim=128,      
+                 numerical_proj_dim=32,
+                 numerical_input_dim=5,
+                 history_feature_layout=None,
+                 temporal_history_encoder=False,
+                 history_encoder_dim=32,
+                 hidden_dim=256,
+                 output_dim=128):        # output_dim should match diffusion model's expected cond_dim
+        super().__init__()
+        self.numerical_input_dim = int(numerical_input_dim)
+        self.history_feature_layout = history_feature_layout or {}
+        self.temporal_history_encoder = bool(temporal_history_encoder)
+
+        # The audited branch encodes long history blocks as sequences instead
+        # of forcing a single MLP to treat 60/252 positions as unrelated scalar
+        # columns. The layout uses absolute condition-column offsets.
+        sequence_specs = []
+        for name in ("returns_60", "returns_252", "vol_path_60"):
+            spec = self.history_feature_layout.get(name)
+            if spec is not None:
+                sequence_specs.append((name, int(spec[0]), int(spec[1])))
+        self.sequence_specs = sequence_specs
+        if self.temporal_history_encoder and not self.sequence_specs:
+            raise ValueError("temporal_history_encoder requires history_feature_layout")
+        
+        # === 1. Embedding层 ===
+        self.country_embedding = nn.Embedding(num_countries, country_emb_dim)
+        self.index_embedding = nn.Embedding(num_indices, index_emb_dim)
+        
+        nn.init.normal_(self.country_embedding.weight, mean=0, std=0.1)
+        nn.init.normal_(self.index_embedding.weight, mean=0, std=0.1)
+        
+        # === 2. 数值特征投影 ===
+        if self.temporal_history_encoder:
+            sequence_columns = {
+                i for _, start, length in self.sequence_specs
+                for i in range(start, start + length)
+            }
+            scalar_indices = [i for i in range(self.numerical_input_dim) if i not in sequence_columns]
+            self.register_buffer("scalar_indices", torch.tensor(scalar_indices, dtype=torch.long), persistent=False)
+            self.numerical_proj = nn.Sequential(
+                nn.Linear(len(scalar_indices), numerical_proj_dim),
+                nn.LayerNorm(numerical_proj_dim),
+                nn.SiLU(),
+            )
+            self.history_encoders = nn.ModuleDict({
+                name: nn.Sequential(
+                    nn.Conv1d(1, history_encoder_dim, kernel_size=5, padding=2),
+                    nn.GroupNorm(4, history_encoder_dim),
+                    nn.SiLU(),
+                    nn.Conv1d(history_encoder_dim, history_encoder_dim, kernel_size=5, padding=2),
+                    nn.GroupNorm(4, history_encoder_dim),
+                    nn.SiLU(),
+                    nn.AdaptiveAvgPool1d(1),
+                )
+                for name, _, _ in self.sequence_specs
+            })
+            numerical_total_dim = numerical_proj_dim + history_encoder_dim * len(self.sequence_specs)
+        else:
+            self.numerical_proj = nn.Sequential(
+                nn.Linear(self.numerical_input_dim, numerical_proj_dim),
+                nn.LayerNorm(numerical_proj_dim),
+                nn.SiLU()
+            )
+            numerical_total_dim = numerical_proj_dim
+        
+        # === 3. 加权融合层 ===
+        total_dim = numerical_total_dim + country_emb_dim + index_emb_dim
+        
+        self.numerical_weight = nn.Parameter(torch.tensor(0.8)) 
+        self.country_weight = nn.Parameter(torch.tensor(1.0)) # Use float
+        self.index_weight = nn.Parameter(torch.tensor(2.0))   # Use float
+        
+        # === 4. 主干网络 ===
+        self.fusion_network = nn.Sequential(
+            nn.Linear(total_dim, hidden_dim),
+            nn.LayerNorm(hidden_dim),
+            nn.SiLU(),
+            nn.Dropout(0.1),
+            
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.LayerNorm(hidden_dim),
+            nn.SiLU(),
+            nn.Dropout(0.1),
+            
+            nn.Linear(hidden_dim, output_dim) # Final output dimension
+        )
+        
+    def forward(self, conditions):
+        """
+        Args:
+            conditions: [batch, 7] - Raw condition tensor from DataProcessor
+        Returns:
+            condition_embedding: [batch, output_dim]
+        """
+        # === 1. 分离特征 ===
+        numerical_features = conditions[:, :self.numerical_input_dim]
+        
+        # --- !! 核心修复：索引安全护栏 !! ---
+        # 提取索引并强制将其限制在合法的 Embedding 范围内
+        # 防止数据中的非法 ID 导致 CUDA error: device-side assert triggered
+        
+        country_ids = conditions[:, self.numerical_input_dim].long()
+        max_country_idx = self.country_embedding.num_embeddings - 1
+        country_ids = torch.clamp(country_ids, 0, max_country_idx)
+        
+        index_ids = conditions[:, self.numerical_input_dim + 1].long()
+        max_index_idx = self.index_embedding.num_embeddings - 1
+        index_ids = torch.clamp(index_ids, 0, max_index_idx)
+        # ------------------------------------
+        
+        # === 2. 获取表示 (现在是安全的) ===
+        if self.temporal_history_encoder:
+            scalar_features = numerical_features.index_select(1, self.scalar_indices)
+            encoded = [self.numerical_proj(scalar_features)]
+            for name, start, length in self.sequence_specs:
+                seq = numerical_features[:, start:start + length].unsqueeze(1)
+                encoded.append(self.history_encoders[name](seq).squeeze(-1))
+            numerical_feat = torch.cat(encoded, dim=-1)
+        else:
+            numerical_feat = self.numerical_proj(numerical_features)
+        country_emb = self.country_embedding(country_ids)      
+        index_emb = self.index_embedding(index_ids)          
+        
+        # === 3. 加权融合 ===
+        weighted_numerical = self.numerical_weight * numerical_feat
+        weighted_country = self.country_weight * country_emb
+        weighted_index = self.index_weight * index_emb
+        
+        combined = torch.cat([weighted_numerical, weighted_country, weighted_index], dim=-1)
+        
+        # === 4. 通过主干网络 ===
+        condition_embedding = self.fusion_network(combined)
+        
+        return condition_embedding
+    def get_feature_importance(self):
+        """返回各特征的相对权重（用于可视化）"""
+        # Use .data to get tensor value without gradients
+        weights = {
+            'numerical': self.numerical_weight.data.item(),
+            'country': self.country_weight.data.item(),
+            'index': self.index_weight.data.item()
+        }
+        total = sum(abs(w) for w in weights.values()) # Use abs value for total? Or just sum? Let's use sum.
+        if total == 0: return {k: 0 for k in weights}
+        return {k: v/total for k, v in weights.items()}

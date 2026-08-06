@@ -1,5 +1,0 @@
-Config
-Data
-Game
-Generator
-Model

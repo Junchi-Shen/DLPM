@@ -34,3 +34,5 @@ paper/*.log
 paper/*.out
 paper/*.synctex.gz
 Results/
+.DS_Store
+*.egg-info/
